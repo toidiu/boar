@@ -1,13 +1,12 @@
 use crate::error::BoarError;
 use crate::error::Result;
+use regex::Regex;
 use std::process::Command;
 use std::process::Stdio;
 
 mod error;
 
 fn main() -> Result<()> {
-    println!("Hello, world!");
-
     // Cli
     let plan = parse_user_input();
 
@@ -30,29 +29,33 @@ fn main() -> Result<()> {
 }
 
 struct ExecutionPlan {
+    log: String,
     server_binary: String,
     client_binary: String,
     server_ip: String,
+    server_port: String,
     stream_bytes_bytes: u64,
 }
 
 fn parse_user_input() -> ExecutionPlan {
     ExecutionPlan {
+        log: "RUST_LOG=info".to_string(),
         server_binary: "/Users/akothari/projects/quiche/target/debug/examples/async_http3_server"
             .to_string(),
         client_binary: "/Users/akothari/projects/quiche/target/debug/quiche-client".to_string(),
-        server_ip: "127.0.0.1:9999".to_string(),
+        server_ip: "127.0.0.1".to_string(),
+        server_port: "9999".to_string(),
         stream_bytes_bytes: 1000,
     }
 }
 
 fn run_server(plan: &ExecutionPlan) {
     let server = &plan.server_binary;
-    let server = format!("{:?} --address 0.0.0.0:9999", server);
+    let server = format!("{:?} --address 0.0.0.0:{}", server, plan.server_port);
 
     let mut binding = Command::new("sh");
     let cmd = binding.arg("-c").arg(server).stdout(Stdio::piped());
-    // println!("{:?}", cmd);
+    // dbg!("{:?}", cmd);
 
     // cmd.status().unwrap();
     cmd.spawn().unwrap();
@@ -61,15 +64,39 @@ fn run_server(plan: &ExecutionPlan) {
 fn run_client(plan: &ExecutionPlan) {
     let client = &plan.client_binary;
     let client = format!(
-        "{:?} https://test.com/stream-bytes/{} --no-verify --connect-to  {}",
-        client, plan.stream_bytes_bytes, plan.server_ip
+        "{} {:?} https://test.com/stream-bytes/{} --no-verify --connect-to  {}:{}",
+        plan.log, client, plan.stream_bytes_bytes, plan.server_ip, plan.server_port
     );
 
     let mut binding = Command::new("sh");
-    let cmd = binding.arg("-c").arg(client);
-    println!("client cmd ---: {:?}", cmd);
+    let cmd = binding
+        .arg("-c")
+        .arg(client)
+        .stderr(Stdio::piped())
+        .stdout(Stdio::null());
 
-    cmd.status().unwrap();
+    // dbg!("client cmd ---: {:?}", &cmd);
+
+    let res = cmd.output().unwrap();
+    let log = str::from_utf8(&res.stderr).unwrap();
+    // dbg!("Full logs: {:?}", log);
+
+    // TODO: use named groups to match and parse more efficiently with just Regex:
+    // https://stackoverflow.com/a/628563
+    //
+    // Regex to get "received in 12.34ms"
+    let re = Regex::new(r"received in \d.*ms").unwrap();
+    let log = re.captures(log).unwrap().get(0).unwrap().as_str();
+
+    // trim text and parse download duration
+    let download_duraiton = log
+        .trim_start_matches("received in")
+        .trim_end_matches("ms")
+        .trim();
+    // dbg!("trimmed log: {:?}", log);
+    let download_duration = download_duraiton.parse::<f32>().unwrap();
+
+    println!("{:?}", download_duration);
 }
 
 fn collect_stats() {}
@@ -86,7 +113,7 @@ fn delete_network() -> Result<()> {
         .output()
         .unwrap();
 
-    println!("{:?}", str::from_utf8(&res.stdout).unwrap());
+    // dbg!("{:?}", str::from_utf8(&res.stdout).unwrap());
 
     if res.status.success() {
         Ok(())
@@ -103,7 +130,7 @@ fn setup_network() -> Result<()> {
         .output()
         .unwrap();
 
-    println!("{:?}", str::from_utf8(&res.stdout).unwrap());
+    // dbg!("{:?}", str::from_utf8(&res.stdout).unwrap());
 
     if res.status.success() {
         Ok(())
