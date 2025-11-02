@@ -30,18 +30,53 @@ fn main() -> Result<()> {
 }
 
 struct ExecutionPlan {
-    server_location: String,
-    client_location: String,
+    server_binary: String,
+    client_binary: String,
+    server_ip: String,
+    stream_bytes_bytes: u64,
 }
 
 fn parse_user_input() -> ExecutionPlan {
     ExecutionPlan {
-        server_location: "/Users/akothari/projects/quiche/target/debug/examples/async_http3_server"
+        server_binary: "/Users/akothari/projects/quiche/target/debug/examples/async_http3_server"
             .to_string(),
-        client_location: "/Users/akothari/projects/quiche/target/debug/examples/quiche-client"
-            .to_string(),
+        client_binary: "/Users/akothari/projects/quiche/target/debug/quiche-client".to_string(),
+        server_ip: "127.0.0.1:9999".to_string(),
+        stream_bytes_bytes: 1000,
     }
 }
+
+fn run_server(plan: &ExecutionPlan) {
+    let server = &plan.server_binary;
+    let server = format!("{:?} --address 0.0.0.0:9999", server);
+
+    let mut binding = Command::new("sh");
+    let cmd = binding.arg("-c").arg(server).stdout(Stdio::piped());
+    // println!("{:?}", cmd);
+
+    // cmd.status().unwrap();
+    cmd.spawn().unwrap();
+}
+
+fn run_client(plan: &ExecutionPlan) {
+    let client = &plan.client_binary;
+    let client = format!(
+        "{:?} https://test.com/stream-bytes/{} --no-verify --connect-to  {}",
+        client, plan.stream_bytes_bytes, plan.server_ip
+    );
+
+    let mut binding = Command::new("sh");
+    let cmd = binding.arg("-c").arg(client);
+    println!("client cmd ---: {:?}", cmd);
+
+    cmd.status().unwrap();
+}
+
+fn collect_stats() {}
+
+fn analyze_stats() {}
+
+fn gen_report() {}
 
 fn delete_network() -> Result<()> {
     let res = Command::new("sh")
@@ -51,7 +86,7 @@ fn delete_network() -> Result<()> {
         .output()
         .unwrap();
 
-    println!("{:?}", str::from_utf8(&res.stdout));
+    println!("{:?}", str::from_utf8(&res.stdout).unwrap());
 
     if res.status.success() {
         Ok(())
@@ -68,7 +103,7 @@ fn setup_network() -> Result<()> {
         .output()
         .unwrap();
 
-    println!("{:?}", str::from_utf8(&res.stdout));
+    println!("{:?}", str::from_utf8(&res.stdout).unwrap());
 
     if res.status.success() {
         Ok(())
@@ -76,28 +111,3 @@ fn setup_network() -> Result<()> {
         Err(BoarError::Script)
     }
 }
-
-fn run_server(plan: &ExecutionPlan) {
-    let server = &plan.server_location;
-    println!("{:?}", server);
-
-    let res = Command::new("sh")
-        .arg("-c")
-        .arg(server)
-        .arg("--address")
-        .arg("0.0.0.0:8888")
-        .status()
-        // .stdout(Stdio::piped())
-        // .output()
-        .unwrap();
-
-    // println!("{:?}", str::from_utf8(&res.stdout));
-}
-
-fn run_client(plan: &ExecutionPlan) {}
-
-fn collect_stats() {}
-
-fn analyze_stats() {}
-
-fn gen_report() {}
