@@ -4,12 +4,13 @@ use regex::Regex;
 use std::fmt::Debug;
 use std::process::Command;
 use std::process::Stdio;
+use std::time::Duration;
 
 mod error;
 
 fn main() -> Result<()> {
     // Cli
-    let setup = parse_user_input();
+    let (setup, plan) = parse_user_input();
 
     // Network
     setup.delete_network()?;
@@ -17,10 +18,14 @@ fn main() -> Result<()> {
 
     // Run
     setup.run_server();
-    setup.run_client();
 
-    // // Data
-    // collect_stats();
+    let mut stats = Vec::new();
+    for _ in 0..plan.run_count {
+        let stat = setup.run_client();
+        stats.push(stat);
+    }
+
+    // Data
     // analyze_stats();
     //
     // // Report
@@ -43,7 +48,7 @@ struct RunSetup<S: ToStats> {
     stat: S,
 }
 
-fn parse_user_input() -> RunSetup<DownloadDuration> {
+fn parse_user_input() -> (RunSetup<DownloadDuration>, ExecutionPlan) {
     let run_setup = RunSetup {
         client_binary: "/Users/akothari/projects/quiche/target/debug/quiche-client".to_string(),
         client_logging: "RUST_LOG=info".to_string(),
@@ -51,11 +56,11 @@ fn parse_user_input() -> RunSetup<DownloadDuration> {
             .to_string(),
         server_ip: "127.0.0.1".to_string(),
         server_port: "9999".to_string(),
-        stream_bytes_bytes: 1000,
+        stream_bytes_bytes: 1000000,
         stat: DownloadDuration::default(),
     };
-    ExecutionPlan { run_count: 1 };
-    run_setup
+    let plan = ExecutionPlan { run_count: 5 };
+    (run_setup, plan)
 }
 
 impl<S: ToStats> RunSetup<S> {
@@ -71,7 +76,7 @@ impl<S: ToStats> RunSetup<S> {
         cmd.spawn().unwrap();
     }
 
-    fn run_client(&self) {
+    fn run_client(&self) -> S::Stat {
         let client = &self.client_binary;
         let client = format!(
             "{} {} https://test.com/stream-bytes/{} --no-verify --connect-to  {}:{}",
@@ -93,6 +98,7 @@ impl<S: ToStats> RunSetup<S> {
 
         let download_duration = self.stat.parse_stat(log);
         println!("{:?}", download_duration);
+        download_duration
     }
 
     // fn collect_stats() {}
@@ -146,7 +152,7 @@ pub trait ToStats {
 struct DownloadDuration;
 
 impl ToStats for DownloadDuration {
-    type Stat = f32;
+    type Stat = Duration;
 
     // TODO: use named groups to match and parse more efficiently with just Regex:
     // https://stackoverflow.com/a/628563
@@ -161,6 +167,7 @@ impl ToStats for DownloadDuration {
             .trim_end_matches("ms")
             .trim();
         // dbg!("trimmed log: {:?}", log);
-        download_duraiton.parse::<f32>().unwrap()
+        let download_duraiton = download_duraiton.parse::<f32>().unwrap();
+        Duration::from_millis(download_duraiton as u64)
     }
 }
