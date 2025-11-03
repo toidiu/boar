@@ -132,7 +132,7 @@ impl<S: ToStats> RunSetup<S> {
     fn setup_network(&self) -> Result<()> {
         let res = Command::new("sh")
             .arg("-c")
-            .arg("./scripts/test.sh")
+            .arg("./scripts/virt_config.sh")
             .stdout(Stdio::piped())
             .output()
             .unwrap();
