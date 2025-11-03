@@ -152,12 +152,12 @@ use plotly::{Scatter, layout::GridPattern, layout::Layout, layout::LayoutGrid};
 pub fn gen_cdf(stats: &[f64]) {
     let title = format!("{}", "title");
 
-    let legend = "legend".clone();
+    let legend = "legend";
     let legend_len = legend.len();
 
     let mut plot = plotly::Plot::new();
 
-    for idx in 1..legend_len {
+    for _idx in 1..legend_len {
         let title = format!("{}", "title");
 
         let mut x: Vec<f64> = Vec::new();
