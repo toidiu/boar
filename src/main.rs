@@ -1,5 +1,6 @@
 use crate::error::BoarError;
 use crate::error::Result;
+use byte_unit::Byte;
 use regex::Regex;
 use std::fmt::Debug;
 use std::process::Command;
@@ -44,7 +45,7 @@ struct RunSetup<S: ToStats> {
     server_binary: String,
     server_ip: String,
     server_port: String,
-    stream_bytes_bytes: u64,
+    download_payload_size: String,
     stat: S,
 }
 
@@ -56,7 +57,7 @@ fn parse_user_input() -> (RunSetup<DownloadDuration>, ExecutionPlan) {
             .to_string(),
         server_ip: "127.0.0.1".to_string(),
         server_port: "9999".to_string(),
-        stream_bytes_bytes: 1000000,
+        download_payload_size: "1mb".to_string(),
         stat: DownloadDuration::default(),
     };
     let plan = ExecutionPlan { run_count: 5 };
@@ -78,9 +79,11 @@ impl<S: ToStats> RunSetup<S> {
 
     fn run_client(&self) -> S::Stat {
         let client = &self.client_binary;
+
+        let download_bytes = Byte::parse_str(&self.download_payload_size, true).unwrap();
         let client = format!(
             "{} {} https://test.com/stream-bytes/{} --no-verify --connect-to  {}:{}",
-            self.client_logging, client, self.stream_bytes_bytes, self.server_ip, self.server_port
+            self.client_logging, client, download_bytes, self.server_ip, self.server_port
         );
 
         let mut binding = Command::new("sh");
