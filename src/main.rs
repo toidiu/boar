@@ -59,7 +59,7 @@ fn parse_user_input() -> (RunSetup<DownloadDuration>, ExecutionPlan) {
             .to_string(),
         server_ip: "127.0.0.1".to_string(),
         server_port: "9999".to_string(),
-        download_payload_size: "10mb".to_string(),
+        download_payload_size: "1mb".to_string(),
         metric: DownloadDuration::default(),
     };
     let plan = ExecutionPlan { run_count: 5 };
