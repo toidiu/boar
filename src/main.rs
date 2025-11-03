@@ -8,15 +8,15 @@ mod error;
 
 fn main() -> Result<()> {
     // Cli
-    let plan = parse_user_input();
+    let setup = parse_user_input();
 
     // Network
     delete_network()?;
     setup_network()?;
 
     // Run
-    run_server(&plan);
-    run_client(&plan);
+    run_server(&setup);
+    run_client(&setup);
 
     // Data
     collect_stats();
@@ -28,30 +28,30 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-struct ExecutionPlan {
-    log: String,
-    server_binary: String,
+struct RunSetup {
     client_binary: String,
+    client_logging: String,
+    server_binary: String,
     server_ip: String,
     server_port: String,
     stream_bytes_bytes: u64,
 }
 
-fn parse_user_input() -> ExecutionPlan {
-    ExecutionPlan {
-        log: "RUST_LOG=info".to_string(),
+fn parse_user_input() -> RunSetup {
+    RunSetup {
+        client_binary: "/Users/akothari/projects/quiche/target/debug/quiche-client".to_string(),
+        client_logging: "RUST_LOG=info".to_string(),
         server_binary: "/Users/akothari/projects/quiche/target/debug/examples/async_http3_server"
             .to_string(),
-        client_binary: "/Users/akothari/projects/quiche/target/debug/quiche-client".to_string(),
         server_ip: "127.0.0.1".to_string(),
         server_port: "9999".to_string(),
         stream_bytes_bytes: 1000,
     }
 }
 
-fn run_server(plan: &ExecutionPlan) {
-    let server = &plan.server_binary;
-    let server = format!("{:?} --address 0.0.0.0:{}", server, plan.server_port);
+fn run_server(setup: &RunSetup) {
+    let server = &setup.server_binary;
+    let server = format!("{:?} --address 0.0.0.0:{}", server, setup.server_port);
 
     let mut binding = Command::new("sh");
     let cmd = binding.arg("-c").arg(server).stdout(Stdio::piped());
@@ -61,11 +61,11 @@ fn run_server(plan: &ExecutionPlan) {
     cmd.spawn().unwrap();
 }
 
-fn run_client(plan: &ExecutionPlan) {
-    let client = &plan.client_binary;
+fn run_client(setup: &RunSetup) {
+    let client = &setup.client_binary;
     let client = format!(
-        "{} {:?} https://test.com/stream-bytes/{} --no-verify --connect-to  {}:{}",
-        plan.log, client, plan.stream_bytes_bytes, plan.server_ip, plan.server_port
+        "{} {} https://test.com/stream-bytes/{} --no-verify --connect-to  {}:{}",
+        setup.client_logging, client, setup.stream_bytes_bytes, setup.server_ip, setup.server_port
     );
 
     let mut binding = Command::new("sh");
@@ -75,7 +75,7 @@ fn run_client(plan: &ExecutionPlan) {
         .stderr(Stdio::piped())
         .stdout(Stdio::null());
 
-    // dbg!("client cmd ---: {:?}", &cmd);
+    dbg!("client cmd ---: {:?}", &cmd);
 
     let res = cmd.output().unwrap();
     let log = str::from_utf8(&res.stderr).unwrap();
