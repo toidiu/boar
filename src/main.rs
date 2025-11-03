@@ -20,14 +20,14 @@ fn main() -> Result<()> {
     // Run
     setup.run_server();
 
-    let mut stats = Vec::new();
+    let mut metrics = Vec::new();
     for _ in 0..plan.run_count {
-        let stat = setup.run_client();
-        stats.push(stat);
+        let metric = setup.run_client();
+        metrics.push(metric);
     }
 
     // Data
-    // analyze_stats();
+    // analyze_metrics();
     //
     // // Report
     // gen_report();
@@ -46,7 +46,7 @@ struct RunSetup<S: ToStats> {
     server_ip: String,
     server_port: String,
     download_payload_size: String,
-    stat: S,
+    metric: S,
 }
 
 fn parse_user_input() -> (RunSetup<DownloadDuration>, ExecutionPlan) {
@@ -58,7 +58,7 @@ fn parse_user_input() -> (RunSetup<DownloadDuration>, ExecutionPlan) {
         server_ip: "127.0.0.1".to_string(),
         server_port: "9999".to_string(),
         download_payload_size: "10mb".to_string(),
-        stat: DownloadDuration::default(),
+        metric: DownloadDuration::default(),
     };
     let plan = ExecutionPlan { run_count: 5 };
     (run_setup, plan)
@@ -77,7 +77,7 @@ impl<S: ToStats> RunSetup<S> {
         cmd.spawn().unwrap();
     }
 
-    fn run_client(&self) -> S::Stat {
+    fn run_client(&self) -> S::Metric {
         let client = &self.client_binary;
 
         let download_bytes = Byte::parse_str(&self.download_payload_size, true).unwrap();
@@ -99,14 +99,14 @@ impl<S: ToStats> RunSetup<S> {
         let log = str::from_utf8(&res.stderr).unwrap();
         // dbg!("Full logs: {:?}", log);
 
-        let download_duration = self.stat.parse_stat(log);
+        let download_duration = self.metric.parse_metric(log);
         println!("{:?}", download_duration);
         download_duration
     }
 
-    // fn collect_stats() {}
+    // fn collect_metrics() {}
     //
-    // fn analyze_stats() {}
+    // fn analyze_metrics() {}
     //
     // fn gen_report() {}
 
@@ -146,20 +146,20 @@ impl<S: ToStats> RunSetup<S> {
 }
 
 pub trait ToStats {
-    type Stat: Debug;
+    type Metric: Debug;
 
-    fn parse_stat(&self, log: &str) -> Self::Stat;
+    fn parse_metric(&self, log: &str) -> Self::Metric;
 }
 
 #[derive(Default)]
 struct DownloadDuration;
 
 impl ToStats for DownloadDuration {
-    type Stat = Duration;
+    type Metric = Duration;
 
     // TODO: use named groups to match and parse more efficiently with just Regex:
     // https://stackoverflow.com/a/628563
-    fn parse_stat(&self, log: &str) -> Self::Stat {
+    fn parse_metric(&self, log: &str) -> Self::Metric {
         // Regex to get "received in 12.34ms"
         //
         // match float: https://stackoverflow.com/a/12643073
