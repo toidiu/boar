@@ -57,7 +57,7 @@ fn parse_user_input() -> (RunSetup<DownloadDuration>, ExecutionPlan) {
             .to_string(),
         server_ip: "127.0.0.1".to_string(),
         server_port: "9999".to_string(),
-        download_payload_size: "1mb".to_string(),
+        download_payload_size: "10mb".to_string(),
         stat: DownloadDuration::default(),
     };
     let plan = ExecutionPlan { run_count: 5 };
@@ -93,7 +93,7 @@ impl<S: ToStats> RunSetup<S> {
             .stderr(Stdio::piped())
             .stdout(Stdio::null());
 
-        // dbg!("client cmd ---: {:?}", &cmd);
+        // dbg!("client cmd ---: {:?}", &cmd);n
 
         let res = cmd.output().unwrap();
         let log = str::from_utf8(&res.stderr).unwrap();
@@ -161,16 +161,35 @@ impl ToStats for DownloadDuration {
     // https://stackoverflow.com/a/628563
     fn parse_stat(&self, log: &str) -> Self::Stat {
         // Regex to get "received in 12.34ms"
-        let re = Regex::new(r"received in \d.*ms").unwrap();
+        //
+        // match float: https://stackoverflow.com/a/12643073
+        // [+-]?([0-9]*[.])?[0-9]+
+        //
+        // match "ms" or "s":
+        // [m]?s
+        let re = Regex::new(r"received in [+-]?([0-9]*[.])?[0-9]+[m]?s").unwrap();
         let log = re.captures(log).unwrap().get(0).unwrap().as_str();
 
         // trim text and parse download duration
         let download_duraiton = log
-            .trim_start_matches("received in")
+            .trim_start_matches("received in ")
             .trim_end_matches("ms")
+            .trim_end_matches("s")
             .trim();
-        // dbg!("trimmed log: {:?}", log);
-        let download_duraiton = download_duraiton.parse::<f32>().unwrap();
-        Duration::from_millis(download_duraiton as u64)
+        // dbg!("trimmed log: {} {}", log, download_duraiton);
+
+        let download_duration = {
+            let duration = download_duraiton.parse::<f32>().unwrap();
+
+            if log.ends_with("ms") {
+                duration
+            } else if log.ends_with("s") {
+                duration * 1000.0
+            } else {
+                unreachable!("Expect ms or s. Instead got: {}", log)
+            }
+        };
+
+        Duration::from_millis(download_duration as u64)
     }
 }
