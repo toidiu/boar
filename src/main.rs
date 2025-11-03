@@ -23,8 +23,10 @@ fn main() -> Result<()> {
     let mut metrics = Vec::new();
     for _ in 0..plan.run_count {
         let metric = setup.run_client();
-        metrics.push(metric);
+        metrics.push(metric.as_secs_f64());
     }
+
+    gen_cdf(&metrics);
 
     // Data
     // analyze_metrics();
@@ -142,6 +144,70 @@ impl<S: ToStats> RunSetup<S> {
         } else {
             Err(BoarError::Script)
         }
+    }
+}
+
+use plotly::{Scatter, layout::GridPattern, layout::Layout, layout::LayoutGrid};
+
+pub fn gen_cdf(stats: &[f64]) {
+    let title = format!("{}", "title");
+
+    let legend = "legend".clone();
+    let legend_len = legend.len();
+
+    let mut plot = plotly::Plot::new();
+
+    for idx in 1..legend_len {
+        let title = format!("{}", "title");
+
+        let mut x: Vec<f64> = Vec::new();
+        // for stat in stats.iter() {
+        //     let temp: Vec<f64> = stat; // stat.values.iter().map(|v| v[idx] as f64).collect();
+
+        x.extend_from_slice(&stats);
+        // }
+
+        let x = cdf(&x);
+        let (x, y): (Vec<_>, Vec<_>) = x.into_iter().map(|(a, b)| (a, b)).unzip();
+
+        // Graph
+        let trace = Scatter::new(x, y).name(&title).x_axis("x").y_axis("y");
+        plot.add_trace(trace);
+    }
+
+    let layout = Layout::new()
+        .title(format!("{} Cumulative distribution function", title))
+        .show_legend(true)
+        .height(1000)
+        .grid(
+            LayoutGrid::new()
+                .rows(1)
+                .columns(1)
+                .pattern(GridPattern::Independent),
+        );
+    plot.set_layout(layout);
+    plot.show();
+}
+
+// https://users.rust-lang.org/t/observed-cdf-of-a-vector/77566/4
+pub fn cdf(x: &[f64]) -> Vec<(f64, f64)> {
+    let ln = x.len() as f64;
+    let mut x_ord = x.to_vec();
+    x_ord.sort_by(|a, b| a.partial_cmp(b).unwrap());
+
+    if let Some(mut previous) = x_ord.get(0).map(|&f| f) {
+        let mut cdf = Vec::new();
+        for (i, f) in x_ord.into_iter().enumerate() {
+            if f != previous {
+                cdf.push((previous, i as f64 / ln));
+                previous = f;
+            }
+        }
+
+        cdf.push((previous, 1.0));
+        cdf
+    } else {
+        Vec::new()
     }
 }
 

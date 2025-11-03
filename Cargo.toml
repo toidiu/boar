@@ -5,4 +5,5 @@ edition = "2024"
 
 [dependencies]
 byte-unit = "5.1.6"
+plotly = "0.13.5"
 regex = "1.12.2"
