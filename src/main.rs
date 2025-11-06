@@ -140,7 +140,9 @@ impl<S: ToStats> RunSetup<S> {
             }
         }
 
-        // FIXME debug wait time with tcpdump
+        // FIXME
+        // - debug wait time with tcpdump
+        // - try with release
         cmd.arg(client).stderr(Stdio::piped()).stdout(Stdio::null());
         // dbg!("client cmd ---: {:?}", &cmd);
 
