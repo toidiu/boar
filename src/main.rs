@@ -111,7 +111,7 @@ impl<S: ToStats> RunSetup<S> {
 
         let download_bytes = Byte::parse_str(&self.download_payload_size, true).unwrap();
         let client = format!(
-            "{} {} https://test.com/stream-bytes/{} --no-verify --connect-to  {}:{}",
+            "{} {} https://test.com/stream-bytes/{} --no-verify --connect-to  {}:{} --idle-timeout 5",
             self.client_logging, client, download_bytes, self.server_ip, self.server_port
         );
 
