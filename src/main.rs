@@ -32,7 +32,7 @@ fn main() -> Result<()> {
     // analyze_metrics();
     let data = gen_cdf(&metrics);
 
-    // // Report
+    // Report
     gen_report(data);
 
     Ok(())
@@ -56,10 +56,12 @@ struct RunSetup<S: ToStats> {
 
 fn parse_user_input() -> (RunSetup<DownloadDuration>, ExecutionPlan) {
     let run_setup = RunSetup {
-        client_binary: "/Users/akothari/projects/quiche/target/debug/quiche-client".to_string(),
+        // cargo build --bin quiche-client
+        client_binary: "../quiche/target/debug/quiche-client".to_string(),
         client_logging: "RUST_LOG=info".to_string(),
-        server_binary: "/Users/akothari/projects/quiche/target/debug/examples/async_http3_server"
-            .to_string(),
+
+        // cargo build --example async_http3_server
+        server_binary: "../quiche/target/debug/examples/async_http3_server".to_string(),
         server_ip: "127.0.0.1".to_string(),
         server_port: "9999".to_string(),
         download_payload_size: "1mb".to_string(),
