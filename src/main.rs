@@ -97,14 +97,20 @@ impl<S: ToStats> RunSetup<S> {
         let server = &self.server_binary;
         let server = format!("{:?} --address 0.0.0.0:{}", server, self.server_port);
 
-        let mut binding = Command::new("sh");
-        let cmd = binding.arg("-c");
+        cfg_if::cfg_if! {
+            if #[cfg(target_os = "linux")] {
+                let mut cmd = Command::new("ip");
+                let cmd = cmd.args(["netns", "exec", "ns_s1"]);
 
-        #[cfg(target_os = "linux")]
-        cmd.args(["ip", "netns", "exec", "ns_s1"]);
+                let cmd = cmd.args(["sh", "-c"]);
+            } else {
+                let mut cmd = Command::new("sh");
+                let cmd = cmd.arg("-c");
+            }
+        }
 
         cmd.arg(server).stdout(Stdio::piped());
-        // dbg!("{:?}", cmd);
+        dbg!("{:?}", &cmd);
 
         // cmd.status().unwrap();
         let server = cmd.spawn().unwrap();
@@ -120,8 +126,8 @@ impl<S: ToStats> RunSetup<S> {
             self.client_logging, client, download_bytes, self.server_ip, self.server_port
         );
 
-        let mut binding = Command::new("sh");
-        let cmd = binding.arg("-c");
+        let mut cmd = Command::new("sh");
+        let cmd = cmd.arg("-c");
 
         #[cfg(target_os = "linux")]
         cmd.args(["ip", "netns", "exec", "ns_c1"]);
