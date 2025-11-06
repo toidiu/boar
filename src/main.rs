@@ -197,7 +197,8 @@ fn plot_cdf(data: Vec<(f64, f64)>) {
                 .pattern(GridPattern::Independent),
         );
     plot.set_layout(layout);
-    plot.show();
+    plot.write_html("plot.html");
+    // plot.show();
 }
 
 // https://users.rust-lang.org/t/observed-cdf-of-a-vector/77566/4
