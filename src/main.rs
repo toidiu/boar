@@ -140,14 +140,15 @@ impl<S: ToStats> RunSetup<S> {
             }
         }
 
+        // FIXME debug wait time with tcpdump
         cmd.arg(client).stderr(Stdio::piped()).stdout(Stdio::null());
-        let end = Instant::now() - start;
-        dbg!(end);
         // dbg!("client cmd ---: {:?}", &cmd);
 
         let res = cmd.output().unwrap();
+        let end = Instant::now() - start;
+        dbg!(end);
         let log = str::from_utf8(&res.stderr).unwrap();
-        // dbg!("Full logs: {:?}", log);
+        dbg!("Full logs: {:?}", log);
 
         let download_duration = self.metric.parse_metric(log);
         println!("{:?}", download_duration);
