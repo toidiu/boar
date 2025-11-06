@@ -134,10 +134,10 @@ impl<S: ToStats> RunSetup<S> {
 
     fn setup_network(&self) -> Result<()> {
         cfg_if::cfg_if! {
-            if #[cfg(unix)] {
-                let script = "./scripts/test.sh";
+            if #[cfg(target_os = "linux")] {
+                let script = "./scripts/virt_config_tc.sh";
             } else {
-                let script = "./scripts/virt_config.sh";
+                let script = "./scripts/test.sh";
             }
         }
 
