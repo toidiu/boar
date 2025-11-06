@@ -123,7 +123,7 @@ impl<S: ToStats> RunSetup<S> {
             .output()
             .unwrap();
 
-        dbg!("{:?}", str::from_utf8(&res.stdout).unwrap());
+        // dbg!("{:?}", str::from_utf8(&res.stdout).unwrap());
 
         if res.status.success() {
             Ok(())
@@ -148,7 +148,7 @@ impl<S: ToStats> RunSetup<S> {
             .output()
             .unwrap();
 
-        // dbg!("{:?}", str::from_utf8(&res.stdout).unwrap());
+        dbg!("{:?}", str::from_utf8(&res.stdout).unwrap());
 
         if res.status.success() {
             Ok(())
