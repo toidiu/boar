@@ -44,6 +44,8 @@ struct ExecutionPlan {
 
 #[derive(Debug)]
 struct RunSetup<S: ToStats> {
+    setup_network: String,
+
     client_binary: String,
     client_logging: String,
     server_binary: String,
@@ -54,15 +56,30 @@ struct RunSetup<S: ToStats> {
 }
 
 fn parse_user_input() -> (RunSetup<DownloadDuration>, ExecutionPlan) {
+    cfg_if::cfg_if! {
+        if #[cfg(target_os = "linux")] {
+            let setup_network = "./scripts/virt_config_tc.sh".to_owned();
+        } else {
+            let setup_network = "./scripts/test.sh".to_owned();
+        }
+    }
+
     let run_setup = RunSetup {
+        // Network
+        setup_network,
+
+        // Client
         // cargo build --bin quiche-client
         client_binary: "../quiche/target/debug/quiche-client".to_string(),
         client_logging: "RUST_LOG=info".to_string(),
 
+        // Server
         // cargo build --example async_http3_server
         server_binary: "../quiche/target/debug/examples/async_http3_server".to_string(),
         server_ip: "127.0.0.1".to_string(),
         server_port: "9999".to_string(),
+
+        // Testing
         download_payload_size: "1mb".to_string(),
         metric: DownloadDuration::default(),
     };
@@ -133,17 +150,9 @@ impl<S: ToStats> RunSetup<S> {
     }
 
     fn setup_network(&self) -> Result<()> {
-        cfg_if::cfg_if! {
-            if #[cfg(target_os = "linux")] {
-                let script = "./scripts/virt_config_tc.sh";
-            } else {
-                let script = "./scripts/test.sh";
-            }
-        }
-
         let res = Command::new("sh")
             .arg("-c")
-            .arg(script)
+            .arg(&self.setup_network)
             .stdout(Stdio::piped())
             .output()
             .unwrap();
