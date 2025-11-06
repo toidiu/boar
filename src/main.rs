@@ -12,12 +12,11 @@ mod error;
 fn main() -> Result<()> {
     // Cli
     let (setup, plan) = parse_user_input();
-    dbg!(&setup, &plan);
+    // dbg!(&setup, &plan);
 
     // Network
     setup.delete_network()?;
     setup.setup_network()?;
-    dbg!(&setup, &plan);
 
     // Run
     setup.run_server();
@@ -124,7 +123,7 @@ impl<S: ToStats> RunSetup<S> {
             .output()
             .unwrap();
 
-        // dbg!("{:?}", str::from_utf8(&res.stdout).unwrap());
+        dbg!("{:?}", str::from_utf8(&res.stdout).unwrap());
 
         if res.status.success() {
             Ok(())
