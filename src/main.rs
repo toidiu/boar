@@ -3,6 +3,7 @@ use crate::error::Result;
 use byte_unit::Byte;
 use regex::Regex;
 use std::fmt::Debug;
+use std::process::Child;
 use std::process::Command;
 use std::process::Stdio;
 use std::time::Duration;
@@ -19,13 +20,15 @@ fn main() -> Result<()> {
     setup.setup_network()?;
 
     // Run
-    setup.run_server();
+    let mut server = setup.run_server();
 
     let mut metrics = Vec::new();
     for _ in 0..plan.run_count {
         let metric = setup.run_client();
         metrics.push(metric.as_secs_f64());
     }
+
+    server.kill().unwrap();
 
     // Data
     // analyze_metrics();
@@ -90,7 +93,7 @@ fn parse_user_input() -> (RunSetup<DownloadDuration>, ExecutionPlan) {
 }
 
 impl<S: ToStats> RunSetup<S> {
-    fn run_server(&self) {
+    fn run_server(&self) -> Child {
         let server = &self.server_binary;
         let server = format!("{:?} --address 0.0.0.0:{}", server, self.server_port);
 
@@ -99,7 +102,8 @@ impl<S: ToStats> RunSetup<S> {
         // dbg!("{:?}", cmd);
 
         // cmd.status().unwrap();
-        cmd.spawn().unwrap();
+        let server = cmd.spawn().unwrap();
+        server
     }
 
     fn run_client(&self) -> S::Metric {
