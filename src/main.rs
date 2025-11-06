@@ -98,7 +98,12 @@ impl<S: ToStats> RunSetup<S> {
         let server = format!("{:?} --address 0.0.0.0:{}", server, self.server_port);
 
         let mut binding = Command::new("sh");
-        let cmd = binding.arg("-c").arg(server).stdout(Stdio::piped());
+        let cmd = binding.arg("-c");
+
+        #[cfg(target_os = "linux")]
+        cmd.args(["ip", "netns", "exec", "ns_s1"]);
+
+        cmd.arg(server).stdout(Stdio::piped());
         // dbg!("{:?}", cmd);
 
         // cmd.status().unwrap();
@@ -116,11 +121,12 @@ impl<S: ToStats> RunSetup<S> {
         );
 
         let mut binding = Command::new("sh");
-        let cmd = binding
-            .arg("-c")
-            .arg(client)
-            .stderr(Stdio::piped())
-            .stdout(Stdio::null());
+        let cmd = binding.arg("-c");
+
+        #[cfg(target_os = "linux")]
+        cmd.args(["ip", "netns", "exec", "ns_c1"]);
+
+        cmd.arg(client).stderr(Stdio::piped()).stdout(Stdio::null());
 
         // dbg!("client cmd ---: {:?}", &cmd);n
 
