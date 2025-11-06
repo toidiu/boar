@@ -12,10 +12,12 @@ mod error;
 fn main() -> Result<()> {
     // Cli
     let (setup, plan) = parse_user_input();
+    dbg!(&setup, &plan);
 
     // Network
     setup.delete_network()?;
     setup.setup_network()?;
+    dbg!(&setup, &plan);
 
     // Run
     setup.run_server();
@@ -26,21 +28,22 @@ fn main() -> Result<()> {
         metrics.push(metric.as_secs_f64());
     }
 
-    gen_cdf(&metrics);
-
     // Data
     // analyze_metrics();
-    //
+    let data = gen_cdf(&metrics);
+
     // // Report
-    // gen_report();
+    gen_report(data);
 
     Ok(())
 }
 
+#[derive(Debug)]
 struct ExecutionPlan {
     run_count: u16,
 }
 
+#[derive(Debug)]
 struct RunSetup<S: ToStats> {
     client_binary: String,
     client_logging: String,
@@ -110,7 +113,6 @@ impl<S: ToStats> RunSetup<S> {
     //
     // fn analyze_metrics() {}
     //
-    // fn gen_report() {}
 
     fn delete_network(&self) -> Result<()> {
         let res = Command::new("sh")
@@ -130,9 +132,17 @@ impl<S: ToStats> RunSetup<S> {
     }
 
     fn setup_network(&self) -> Result<()> {
+        cfg_if::cfg_if! {
+            if #[cfg(unix)] {
+                let script = "./scripts/test.sh";
+            } else {
+                let script = "./scripts/virt_config.sh";
+            }
+        }
+
         let res = Command::new("sh")
             .arg("-c")
-            .arg("./scripts/virt_config.sh")
+            .arg(script)
             .stdout(Stdio::piped())
             .output()
             .unwrap();
@@ -149,32 +159,31 @@ impl<S: ToStats> RunSetup<S> {
 
 use plotly::{Scatter, layout::GridPattern, layout::Layout, layout::LayoutGrid};
 
-pub fn gen_cdf(stats: &[f64]) {
-    let title = format!("{}", "title");
+pub fn gen_cdf(stats: &[f64]) -> Vec<(f64, f64)> {
+    // Generate CDF
+    let mut x: Vec<f64> = Vec::new();
+    x.extend_from_slice(&stats);
 
-    let legend = "legend";
-    let legend_len = legend.len();
+    cdf(&x)
+}
 
+fn gen_report(data: Vec<(f64, f64)>) {
+    plot_cdf(data);
+}
+
+fn plot_cdf(data: Vec<(f64, f64)>) {
     let mut plot = plotly::Plot::new();
+    let (x, y): (Vec<_>, Vec<_>) = data.into_iter().map(|(a, b)| (a, b)).unzip();
 
-    for _idx in 1..legend_len {
-        let title = format!("{}", "title");
+    // Graph
+    let trace = Scatter::new(x, y)
+        // dont show legend for CDF
+        .show_legend(false)
+        .x_axis("x")
+        .y_axis("y");
+    plot.add_trace(trace);
 
-        let mut x: Vec<f64> = Vec::new();
-        // for stat in stats.iter() {
-        //     let temp: Vec<f64> = stat; // stat.values.iter().map(|v| v[idx] as f64).collect();
-
-        x.extend_from_slice(&stats);
-        // }
-
-        let x = cdf(&x);
-        let (x, y): (Vec<_>, Vec<_>) = x.into_iter().map(|(a, b)| (a, b)).unzip();
-
-        // Graph
-        let trace = Scatter::new(x, y).name(&title).x_axis("x").y_axis("y");
-        plot.add_trace(trace);
-    }
-
+    let title = format!("{}", "title");
     let layout = Layout::new()
         .title(format!("{} Cumulative distribution function", title))
         .show_legend(true)
@@ -217,7 +226,7 @@ pub trait ToStats {
     fn parse_metric(&self, log: &str) -> Self::Metric;
 }
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 struct DownloadDuration;
 
 impl ToStats for DownloadDuration {
