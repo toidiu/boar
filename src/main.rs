@@ -7,6 +7,7 @@ use std::process::Child;
 use std::process::Command;
 use std::process::Stdio;
 use std::time::Duration;
+use std::time::Instant;
 
 mod error;
 
@@ -118,6 +119,7 @@ impl<S: ToStats> RunSetup<S> {
     }
 
     fn run_client(&self) -> S::Metric {
+        let start = Instant::now();
         let client = &self.client_binary;
 
         let download_bytes = Byte::parse_str(&self.download_payload_size, true).unwrap();
@@ -139,6 +141,8 @@ impl<S: ToStats> RunSetup<S> {
         }
 
         cmd.arg(client).stderr(Stdio::piped()).stdout(Stdio::null());
+        let end = Instant::now() - start;
+        dbg!(end);
         // dbg!("client cmd ---: {:?}", &cmd);
 
         let res = cmd.output().unwrap();
