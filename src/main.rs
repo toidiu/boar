@@ -58,9 +58,11 @@ struct RunSetup<S: ToStats> {
 fn parse_user_input() -> (RunSetup<DownloadDuration>, ExecutionPlan) {
     cfg_if::cfg_if! {
         if #[cfg(target_os = "linux")] {
-            let setup_network = "./scripts/virt_config_tc.sh".to_owned();
+            let setup_network = "./scripts/virt_config_tc.sh".to_string();
+            let server_ip="10.55.10.1".to_string();
         } else {
-            let setup_network = "./scripts/test.sh".to_owned();
+            let setup_network = "./scripts/test.sh".to_string();
+            let server_ip = "127.0.0.1".to_string();
         }
     }
 
@@ -76,7 +78,7 @@ fn parse_user_input() -> (RunSetup<DownloadDuration>, ExecutionPlan) {
         // Server
         // cargo build --example async_http3_server
         server_binary: "../quiche/target/debug/examples/async_http3_server".to_string(),
-        server_ip: "127.0.0.1".to_string(),
+        server_ip,
         server_port: "9999".to_string(),
 
         // Testing
