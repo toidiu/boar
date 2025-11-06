@@ -126,15 +126,20 @@ impl<S: ToStats> RunSetup<S> {
             self.client_logging, client, download_bytes, self.server_ip, self.server_port
         );
 
-        let mut cmd = Command::new("sh");
-        let cmd = cmd.arg("-c");
+        cfg_if::cfg_if! {
+            if #[cfg(target_os = "linux")] {
+                let mut cmd = Command::new("ip");
+                let cmd = cmd.args(["netns", "exec", "ns_c1"]);
 
-        #[cfg(target_os = "linux")]
-        cmd.args(["ip", "netns", "exec", "ns_c1"]);
+                let cmd = cmd.args(["sh", "-c"]);
+            } else {
+                let mut cmd = Command::new("sh");
+                let cmd = cmd.arg("-c");
+            }
+        }
 
         cmd.arg(client).stderr(Stdio::piped()).stdout(Stdio::null());
-
-        // dbg!("client cmd ---: {:?}", &cmd);n
+        // dbg!("client cmd ---: {:?}", &cmd);
 
         let res = cmd.output().unwrap();
         let log = str::from_utf8(&res.stderr).unwrap();
