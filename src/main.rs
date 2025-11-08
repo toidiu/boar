@@ -7,7 +7,6 @@ use std::process::Child;
 use std::process::Command;
 use std::process::Stdio;
 use std::time::Duration;
-use std::time::Instant;
 
 mod error;
 
