@@ -19,8 +19,8 @@ fn main() -> Result<()> {
 
     for network_setup in plan.network_setups {
         // Network
-        ExecutionPlan::delete_network()?;
-        ExecutionPlan::setup_network(&network_setup)?;
+        network_setup.delete_network()?;
+        network_setup.setup_network()?;
 
         // Run
         let mut server = setup.run_server();
@@ -65,10 +65,8 @@ impl NetworkSetup {
 
         stats::plot_cdf(data);
     }
-}
 
-impl ExecutionPlan {
-    fn delete_network() -> Result<()> {
+    fn delete_network(&self) -> Result<()> {
         let res = Command::new("sh")
             .arg("-c")
             .arg("./scripts/test.sh")
@@ -85,10 +83,10 @@ impl ExecutionPlan {
         }
     }
 
-    fn setup_network(net_setup: &NetworkSetup) -> Result<()> {
+    fn setup_network(&self) -> Result<()> {
         let res = Command::new("sh")
             .arg("-c")
-            .arg(&net_setup.cmd)
+            .arg(&self.cmd)
             .stdout(Stdio::piped())
             .output()
             .unwrap();
@@ -105,6 +103,8 @@ impl ExecutionPlan {
         }
     }
 }
+
+impl ExecutionPlan {}
 
 #[derive(Debug)]
 struct RunSetup<S: ToStats> {
