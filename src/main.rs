@@ -89,10 +89,10 @@ impl NetworkSetup {
             .output()
             .unwrap();
 
-        println!(
-            "Setup network cmd: {:?}",
-            str::from_utf8(&res.stdout).unwrap()
-        );
+        // dbg!(
+        //     "Setup network cmd: {:?}",
+        //     str::from_utf8(&res.stdout).unwrap()
+        // );
 
         if res.status.success() {
             Ok(())
