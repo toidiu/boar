@@ -15,42 +15,78 @@ fn main() -> Result<()> {
     let (setup, plan) = parse_user_input();
     // dbg!(&setup, &plan);
 
-    // Network
-    setup.delete_network()?;
-    setup.setup_network()?;
+    for network_setup in plan.network_setup {
+        // Network
+        ExecutionPlan::delete_network()?;
+        ExecutionPlan::setup_network(network_setup)?;
 
-    // Run
-    let mut server = setup.run_server();
+        // Run
+        let mut server = setup.run_server();
 
-    let mut metrics = Vec::new();
-    for _ in 0..plan.run_count {
-        let log = setup.run_client();
-        let metric = setup.metric.parse_metric(&log);
-        println!("Download duration: {:?}", metric);
-        metrics.push(metric.as_secs_f64());
+        let mut metrics = Vec::new();
+        for _ in 0..plan.run_count {
+            let log = setup.run_client();
+            let metric = setup.metric.parse_metric(&log);
+            println!("Download duration: {:?}", metric);
+            metrics.push(metric.as_secs_f64());
+        }
+
+        server.kill().unwrap();
+
+        // Report
+        gen_report(metrics);
     }
-
-    server.kill().unwrap();
-
-    // Data
-    // analyze_metrics();
-    let data = gen_cdf(&metrics);
-
-    // Report
-    gen_report(data);
 
     Ok(())
 }
 
 #[derive(Debug)]
 struct ExecutionPlan {
+    network_setup: Vec<String>,
     run_count: u16,
+}
+
+impl ExecutionPlan {
+    fn delete_network() -> Result<()> {
+        let res = Command::new("sh")
+            .arg("-c")
+            .arg("./scripts/test.sh")
+            .stdout(Stdio::piped())
+            .output()
+            .unwrap();
+
+        // dbg!("{:?}", str::from_utf8(&res.stdout).unwrap());
+
+        if res.status.success() {
+            Ok(())
+        } else {
+            Err(BoarError::Script)
+        }
+    }
+
+    fn setup_network(setup_network_cmd: String) -> Result<()> {
+        let res = Command::new("sh")
+            .arg("-c")
+            .arg(setup_network_cmd)
+            .stdout(Stdio::piped())
+            .output()
+            .unwrap();
+
+        println!(
+            "Setup network cmd: {:?}",
+            str::from_utf8(&res.stdout).unwrap()
+        );
+
+        if res.status.success() {
+            Ok(())
+        } else {
+            Err(BoarError::Script)
+        }
+    }
 }
 
 #[derive(Debug)]
 struct RunSetup<S: ToStats> {
-    setup_network: String,
-
     client_binary: String,
     client_logging: String,
     server_binary: String,
@@ -66,15 +102,12 @@ fn parse_user_input() -> (RunSetup<DownloadDuration>, ExecutionPlan) {
             let setup_network = "./scripts/virt_config_tc.sh".to_string();
             let server_ip="10.55.10.1".to_string();
         } else {
-            let setup_network = "./scripts/test.sh".to_string();
+            let network_setup = "./scripts/test.sh".to_string();
             let server_ip = "127.0.0.1".to_string();
         }
     }
 
     let run_setup = RunSetup {
-        // Network
-        setup_network,
-
         // Client
         // cargo build --bin quiche-client
         client_binary: "../quiche/target/debug/quiche-client".to_string(),
@@ -90,7 +123,11 @@ fn parse_user_input() -> (RunSetup<DownloadDuration>, ExecutionPlan) {
         download_payload_size: "1mb".to_string(),
         metric: DownloadDuration::default(),
     };
-    let plan = ExecutionPlan { run_count: 5 };
+
+    let plan = ExecutionPlan {
+        network_setup: vec![network_setup],
+        run_count: 5,
+    };
     (run_setup, plan)
 }
 
@@ -151,43 +188,6 @@ impl<S: ToStats> RunSetup<S> {
     //
     // fn analyze_metrics() {}
     //
-
-    fn delete_network(&self) -> Result<()> {
-        let res = Command::new("sh")
-            .arg("-c")
-            .arg("./scripts/test.sh")
-            .stdout(Stdio::piped())
-            .output()
-            .unwrap();
-
-        // dbg!("{:?}", str::from_utf8(&res.stdout).unwrap());
-
-        if res.status.success() {
-            Ok(())
-        } else {
-            Err(BoarError::Script)
-        }
-    }
-
-    fn setup_network(&self) -> Result<()> {
-        let res = Command::new("sh")
-            .arg("-c")
-            .arg(&self.setup_network)
-            .stdout(Stdio::piped())
-            .output()
-            .unwrap();
-
-        println!(
-            "Setup network cmd: {:?}",
-            str::from_utf8(&res.stdout).unwrap()
-        );
-
-        if res.status.success() {
-            Ok(())
-        } else {
-            Err(BoarError::Script)
-        }
-    }
 }
 
 use plotly::{Scatter, layout::GridPattern, layout::Layout, layout::LayoutGrid};
@@ -200,7 +200,11 @@ pub fn gen_cdf(stats: &[f64]) -> Vec<(f64, f64)> {
     cdf(&x)
 }
 
-fn gen_report(data: Vec<(f64, f64)>) {
+fn gen_report(metrics: Vec<f64>) {
+    // Data
+    // analyze_metrics();
+    let data = gen_cdf(&metrics);
+
     plot_cdf(data);
 }
 
