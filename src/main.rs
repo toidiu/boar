@@ -42,7 +42,9 @@ fn main() -> Result<()> {
         server.kill().unwrap();
 
         // Report
-        network_setup.report(metrics);
+        let report = network_setup.report(metrics);
+
+        println!("{:#?}", report);
     }
 
     Ok(())
@@ -54,25 +56,44 @@ struct ExecutionPlan {
     run_count: u16,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct NetworkSetup {
     cmd: String,
-    // delay_ms: u64,
-    // loss_pct: u64,
-    // bandwidth: u64,
+    delay_ms: u64,
+    loss_pct: u64,
+    rate_mbit: u64,
+}
+
+#[derive(Debug)]
+struct Report {
+    network_setup: NetworkSetup,
+    cdf_plot: Option<String>,
 }
 
 impl NetworkSetup {
     fn new(cmd: String) -> Self {
-        NetworkSetup { cmd }
+        NetworkSetup {
+            cmd,
+            // Default values in script
+            delay_ms: 50,
+            // Default values in script
+            loss_pct: 0,
+            // Default values in script
+            rate_mbit: 20,
+        }
     }
 
-    fn report(&self, metrics: Vec<f64>) {
+    fn report(&self, metrics: Vec<f64>) -> Report {
         let data = stats::gen_cdf(&metrics);
 
-        let plot_file = stats::plot_cdf(data);
+        let cdf_plot = stats::plot_cdf(data);
 
-        println!("Report: {}", plot_file);
+        let report = Report {
+            network_setup: self.clone(),
+            cdf_plot: Some(cdf_plot),
+        };
+
+        report
     }
 
     fn cleanup(&self) -> Result<()> {
@@ -155,7 +176,10 @@ fn parse_user_input() -> (RunSetup<DownloadDuration>, ExecutionPlan) {
     };
 
     let plan = ExecutionPlan {
-        network_setups: vec![NetworkSetup::new(network_setup)],
+        network_setups: vec![
+            NetworkSetup::new(network_setup.clone()),
+            NetworkSetup::new(network_setup),
+        ],
         run_count: 5,
     };
     (run_setup, plan)
