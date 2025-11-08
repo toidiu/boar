@@ -22,8 +22,8 @@ fn main() -> Result<()> {
 
     for network_setup in &plan.network_setups {
         // Network
-        network_setup.delete_network()?;
-        network_setup.setup_network()?;
+        network_setup.cleanup()?;
+        network_setup.setup()?;
 
         // Run
         let mut server = setup.run_server();
@@ -42,7 +42,7 @@ fn main() -> Result<()> {
         server.kill().unwrap();
 
         // Report
-        network_setup.gen_report(metrics);
+        network_setup.report(metrics);
     }
 
     Ok(())
@@ -57,6 +57,9 @@ struct ExecutionPlan {
 #[derive(Debug)]
 struct NetworkSetup {
     cmd: String,
+    // delay_ms: u64,
+    // loss_pct: u64,
+    // bandwidth: u64,
 }
 
 impl NetworkSetup {
@@ -64,13 +67,15 @@ impl NetworkSetup {
         NetworkSetup { cmd }
     }
 
-    fn gen_report(&self, metrics: Vec<f64>) {
+    fn report(&self, metrics: Vec<f64>) {
         let data = stats::gen_cdf(&metrics);
 
-        stats::plot_cdf(data);
+        let plot_file = stats::plot_cdf(data);
+
+        println!("Report: {}", plot_file);
     }
 
-    fn delete_network(&self) -> Result<()> {
+    fn cleanup(&self) -> Result<()> {
         let res = Command::new("sh")
             .arg("-c")
             .arg("./scripts/test.sh")
@@ -87,7 +92,7 @@ impl NetworkSetup {
         }
     }
 
-    fn setup_network(&self) -> Result<()> {
+    fn setup(&self) -> Result<()> {
         let res = Command::new("sh")
             .arg("-c")
             .arg(&self.cmd)

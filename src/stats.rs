@@ -15,7 +15,7 @@ pub fn gen_cdf(stats: &[f64]) -> Vec<(f64, f64)> {
     cdf(&x)
 }
 
-pub(crate) fn plot_cdf(data: Vec<(f64, f64)>) {
+pub(crate) fn plot_cdf(data: Vec<(f64, f64)>) -> String {
     let mut plot = plotly::Plot::new();
     let (x, y): (Vec<_>, Vec<_>) = data.into_iter().map(|(a, b)| (a, b)).unzip();
 
@@ -39,8 +39,10 @@ pub(crate) fn plot_cdf(data: Vec<(f64, f64)>) {
                 .pattern(GridPattern::Independent),
         );
     plot.set_layout(layout);
-    plot.write_html("plot.html");
-    // plot.show();
+    let file = "plot.html";
+    plot.write_html(file);
+
+    file.to_owned()
 }
 
 // https://users.rust-lang.org/t/observed-cdf-of-a-vector/77566/4
