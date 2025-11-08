@@ -1,5 +1,6 @@
 use crate::error::BoarError;
 use crate::error::Result;
+use crate::stats::ToStats;
 use byte_unit::Byte;
 use regex::Regex;
 use std::fmt::Debug;
@@ -9,16 +10,17 @@ use std::process::Stdio;
 use std::time::Duration;
 
 mod error;
+mod stats;
 
 fn main() -> Result<()> {
     // Cli
     let (setup, plan) = parse_user_input();
     // dbg!(&setup, &plan);
 
-    for network_setup in plan.network_setup {
+    for network_setup in plan.network_setups {
         // Network
         ExecutionPlan::delete_network()?;
-        ExecutionPlan::setup_network(network_setup)?;
+        ExecutionPlan::setup_network(&network_setup)?;
 
         // Run
         let mut server = setup.run_server();
@@ -34,7 +36,7 @@ fn main() -> Result<()> {
         server.kill().unwrap();
 
         // Report
-        gen_report(metrics);
+        network_setup.gen_report(metrics);
     }
 
     Ok(())
@@ -42,8 +44,27 @@ fn main() -> Result<()> {
 
 #[derive(Debug)]
 struct ExecutionPlan {
-    network_setup: Vec<String>,
+    network_setups: Vec<NetworkSetup>,
     run_count: u16,
+}
+
+#[derive(Debug)]
+struct NetworkSetup {
+    cmd: String,
+}
+
+impl NetworkSetup {
+    fn new(cmd: String) -> Self {
+        NetworkSetup { cmd }
+    }
+
+    fn gen_report(&self, metrics: Vec<f64>) {
+        // Data
+        // analyze_metrics();
+        let data = stats::gen_cdf(&metrics);
+
+        stats::plot_cdf(data);
+    }
 }
 
 impl ExecutionPlan {
@@ -64,10 +85,10 @@ impl ExecutionPlan {
         }
     }
 
-    fn setup_network(setup_network_cmd: String) -> Result<()> {
+    fn setup_network(net_setup: &NetworkSetup) -> Result<()> {
         let res = Command::new("sh")
             .arg("-c")
-            .arg(setup_network_cmd)
+            .arg(&net_setup.cmd)
             .stdout(Stdio::piped())
             .output()
             .unwrap();
@@ -125,7 +146,7 @@ fn parse_user_input() -> (RunSetup<DownloadDuration>, ExecutionPlan) {
     };
 
     let plan = ExecutionPlan {
-        network_setup: vec![network_setup],
+        network_setups: vec![NetworkSetup::new(network_setup)],
         run_count: 5,
     };
     (run_setup, plan)
@@ -188,80 +209,6 @@ impl<S: ToStats> RunSetup<S> {
     //
     // fn analyze_metrics() {}
     //
-}
-
-use plotly::{Scatter, layout::GridPattern, layout::Layout, layout::LayoutGrid};
-
-pub fn gen_cdf(stats: &[f64]) -> Vec<(f64, f64)> {
-    // Generate CDF
-    let mut x: Vec<f64> = Vec::new();
-    x.extend_from_slice(&stats);
-
-    cdf(&x)
-}
-
-fn gen_report(metrics: Vec<f64>) {
-    // Data
-    // analyze_metrics();
-    let data = gen_cdf(&metrics);
-
-    plot_cdf(data);
-}
-
-fn plot_cdf(data: Vec<(f64, f64)>) {
-    let mut plot = plotly::Plot::new();
-    let (x, y): (Vec<_>, Vec<_>) = data.into_iter().map(|(a, b)| (a, b)).unzip();
-
-    // Graph
-    let trace = Scatter::new(x, y)
-        // dont show legend for CDF
-        .show_legend(false)
-        .x_axis("x")
-        .y_axis("y");
-    plot.add_trace(trace);
-
-    let title = format!("{}", "title");
-    let layout = Layout::new()
-        .title(format!("{} Cumulative distribution function", title))
-        .show_legend(true)
-        .height(1000)
-        .grid(
-            LayoutGrid::new()
-                .rows(1)
-                .columns(1)
-                .pattern(GridPattern::Independent),
-        );
-    plot.set_layout(layout);
-    plot.write_html("plot.html");
-    // plot.show();
-}
-
-// https://users.rust-lang.org/t/observed-cdf-of-a-vector/77566/4
-pub fn cdf(x: &[f64]) -> Vec<(f64, f64)> {
-    let ln = x.len() as f64;
-    let mut x_ord = x.to_vec();
-    x_ord.sort_by(|a, b| a.partial_cmp(b).unwrap());
-
-    if let Some(mut previous) = x_ord.get(0).map(|&f| f) {
-        let mut cdf = Vec::new();
-        for (i, f) in x_ord.into_iter().enumerate() {
-            if f != previous {
-                cdf.push((previous, i as f64 / ln));
-                previous = f;
-            }
-        }
-
-        cdf.push((previous, 1.0));
-        cdf
-    } else {
-        Vec::new()
-    }
-}
-
-pub trait ToStats {
-    type Metric: Debug;
-
-    fn parse_metric(&self, log: &str) -> Self::Metric;
 }
 
 #[derive(Default, Debug)]
