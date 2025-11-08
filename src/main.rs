@@ -59,8 +59,6 @@ impl NetworkSetup {
     }
 
     fn gen_report(&self, metrics: Vec<f64>) {
-        // Data
-        // analyze_metrics();
         let data = stats::gen_cdf(&metrics);
 
         stats::plot_cdf(data);
@@ -204,11 +202,6 @@ impl<S: ToStats> RunSetup<S> {
         let res = cmd.output().unwrap();
         String::from_utf8(res.stderr).unwrap()
     }
-
-    // fn collect_metrics() {}
-    //
-    // fn analyze_metrics() {}
-    //
 }
 
 #[derive(Default, Debug)]
