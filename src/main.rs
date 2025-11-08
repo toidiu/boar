@@ -118,7 +118,7 @@ struct RunSetup<S: ToStats> {
 fn parse_user_input() -> (RunSetup<DownloadDuration>, ExecutionPlan) {
     cfg_if::cfg_if! {
         if #[cfg(target_os = "linux")] {
-            let setup_network = "./scripts/virt_config_tc.sh".to_string();
+            let network_setup = "./scripts/virt_config_tc.sh".to_string();
             let server_ip="10.55.10.1".to_string();
         } else {
             let network_setup = "./scripts/test.sh".to_string();
