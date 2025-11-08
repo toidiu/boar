@@ -25,7 +25,9 @@ fn main() -> Result<()> {
 
     let mut metrics = Vec::new();
     for _ in 0..plan.run_count {
-        let metric = setup.run_client();
+        let log = setup.run_client();
+        let metric = setup.metric.parse_metric(&log);
+        println!("Download duration: {:?}", metric);
         metrics.push(metric.as_secs_f64());
     }
 
@@ -118,8 +120,7 @@ impl<S: ToStats> RunSetup<S> {
         server
     }
 
-    fn run_client(&self) -> S::Metric {
-        let start = Instant::now();
+    fn run_client(&self) -> String {
         let client = &self.client_binary;
 
         let download_bytes = Byte::parse_str(&self.download_payload_size, true).unwrap();
@@ -140,21 +141,11 @@ impl<S: ToStats> RunSetup<S> {
             }
         }
 
-        // FIXME
-        // - debug wait time with tcpdump
-        // - try with release
-        cmd.arg(client).stderr(Stdio::piped()).stdout(Stdio::null());
+        cmd.arg(client).stderr(Stdio::piped());
         // dbg!("client cmd ---: {:?}", &cmd);
 
         let res = cmd.output().unwrap();
-        let end = Instant::now() - start;
-        dbg!(end);
-        let log = str::from_utf8(&res.stderr).unwrap();
-        dbg!("Full logs: {:?}", log);
-
-        let download_duration = self.metric.parse_metric(log);
-        println!("{:?}", download_duration);
-        download_duration
+        String::from_utf8(res.stderr).unwrap()
     }
 
     // fn collect_metrics() {}
