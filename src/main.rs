@@ -17,7 +17,10 @@ fn main() -> Result<()> {
     let (setup, plan) = parse_user_input();
     // dbg!(&setup, &plan);
 
-    for network_setup in plan.network_setups {
+    println!("Executing: {:?}", &plan);
+    println!("Executing: {:?}", &setup);
+
+    for network_setup in &plan.network_setups {
         // Network
         network_setup.delete_network()?;
         network_setup.setup_network()?;
@@ -26,10 +29,13 @@ fn main() -> Result<()> {
         let mut server = setup.run_server();
 
         let mut metrics = Vec::new();
-        for _ in 0..plan.run_count {
+        for i in 1..=plan.run_count {
             let log = setup.run_client();
             let metric = setup.metric.parse_metric(&log);
-            println!("Download duration: {:?}", metric);
+            println!(
+                "Run [{}/{}]: Download duration: {:?}",
+                i, plan.run_count, metric
+            );
             metrics.push(metric.as_secs_f64());
         }
 
