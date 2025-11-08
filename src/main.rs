@@ -112,7 +112,7 @@ impl<S: ToStats> RunSetup<S> {
         }
 
         cmd.arg(server).stdout(Stdio::piped());
-        dbg!("{:?}", &cmd);
+        // dbg!("{:?}", &cmd);
 
         // cmd.status().unwrap();
         let server = cmd.spawn().unwrap();
@@ -177,7 +177,10 @@ impl<S: ToStats> RunSetup<S> {
             .output()
             .unwrap();
 
-        dbg!("{:?}", str::from_utf8(&res.stdout).unwrap());
+        println!(
+            "Setup network cmd: {:?}",
+            str::from_utf8(&res.stdout).unwrap()
+        );
 
         if res.status.success() {
             Ok(())
