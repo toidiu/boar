@@ -9,12 +9,13 @@ use std::process::Command;
 use std::process::Stdio;
 use std::time::Duration;
 
+mod args;
 mod error;
 mod stats;
 
 fn main() -> Result<()> {
     // Cli
-    let (setup, plan) = parse_user_input();
+    let (setup, plan) = args::parse();
     // dbg!(&setup, &plan);
 
     println!("Executing: {:?}", &plan);
@@ -29,12 +30,12 @@ fn main() -> Result<()> {
         let mut server = setup.run_server();
 
         let mut metrics = Vec::new();
-        for i in 1..=plan.run_count {
+        for i in 1..=setup.run_count {
             let log = setup.run_client();
             let metric = setup.metric.parse_metric(&log);
             println!(
                 "Run [{}/{}]: Download duration: {:?}",
-                i, plan.run_count, metric
+                i, setup.run_count, metric
             );
             metrics.push(metric.as_secs_f64());
         }
@@ -42,7 +43,7 @@ fn main() -> Result<()> {
         server.kill().unwrap();
 
         // Report
-        let report = network_setup.report(metrics);
+        let report = network_setup.report(metrics, &setup.download_payload_size, setup.run_count);
 
         println!("{:#?}", report);
     }
@@ -53,7 +54,6 @@ fn main() -> Result<()> {
 #[derive(Debug)]
 struct ExecutionPlan {
     network_setups: Vec<NetworkSetup>,
-    run_count: u16,
 }
 
 #[derive(Debug, Clone)]
@@ -66,6 +66,8 @@ struct NetworkSetup {
 
 #[derive(Debug)]
 struct Report {
+    download_size: String,
+    run_count: u16,
     network_setup: NetworkSetup,
     cdf_plot: Option<String>,
 }
@@ -83,7 +85,7 @@ impl NetworkSetup {
         }
     }
 
-    fn report(&self, metrics: Vec<f64>) -> Report {
+    fn report(&self, metrics: Vec<f64>, download_size: &str, run_count: u16) -> Report {
         let data = stats::gen_cdf(&metrics);
 
         let cdf_plot = stats::plot_cdf(data);
@@ -91,6 +93,8 @@ impl NetworkSetup {
         let report = Report {
             network_setup: self.clone(),
             cdf_plot: Some(cdf_plot),
+            download_size: download_size.to_owned(),
+            run_count,
         };
 
         report
@@ -144,45 +148,8 @@ struct RunSetup<S: ToStats> {
     server_ip: String,
     server_port: String,
     download_payload_size: String,
+    run_count: u16,
     metric: S,
-}
-
-fn parse_user_input() -> (RunSetup<DownloadDuration>, ExecutionPlan) {
-    cfg_if::cfg_if! {
-        if #[cfg(target_os = "linux")] {
-            let network_setup = "./scripts/virt_config_tc.sh".to_string();
-            let server_ip="10.55.10.1".to_string();
-        } else {
-            let network_setup = "./scripts/test.sh".to_string();
-            let server_ip = "127.0.0.1".to_string();
-        }
-    }
-
-    let run_setup = RunSetup {
-        // Client
-        // cargo build --bin quiche-client
-        client_binary: "../quiche/target/debug/quiche-client".to_string(),
-        client_logging: "RUST_LOG=info".to_string(),
-
-        // Server
-        // cargo build --example async_http3_server
-        server_binary: "../quiche/target/debug/examples/async_http3_server".to_string(),
-        server_ip,
-        server_port: "9999".to_string(),
-
-        // Testing
-        download_payload_size: "1mb".to_string(),
-        metric: DownloadDuration::default(),
-    };
-
-    let plan = ExecutionPlan {
-        network_setups: vec![
-            NetworkSetup::new(network_setup.clone()),
-            NetworkSetup::new(network_setup),
-        ],
-        run_count: 5,
-    };
-    (run_setup, plan)
 }
 
 impl<S: ToStats> RunSetup<S> {
