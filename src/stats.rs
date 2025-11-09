@@ -1,4 +1,5 @@
 use plotly::{Scatter, layout::GridPattern, layout::Layout, layout::LayoutGrid};
+use statrs::statistics::{Data, Distribution, Median, OrderStatistics};
 use std::fmt::Debug;
 
 pub trait ToStats {
@@ -7,17 +8,11 @@ pub trait ToStats {
     fn parse_metric(&self, log: &str) -> Self::Metric;
 }
 
-pub fn gen_cdf(stats: &[f64]) -> Vec<(f64, f64)> {
-    // Generate CDF
-    let mut x: Vec<f64> = Vec::new();
-    x.extend_from_slice(&stats);
+pub(crate) fn plot_cdf(data: &Data<Vec<f64>>) -> String {
+    let cdf_data = cdf(data);
 
-    cdf(&x)
-}
-
-pub(crate) fn plot_cdf(data: Vec<(f64, f64)>) -> String {
     let mut plot = plotly::Plot::new();
-    let (x, y): (Vec<_>, Vec<_>) = data.into_iter().map(|(a, b)| (a, b)).unzip();
+    let (x, y): (Vec<_>, Vec<_>) = cdf_data.into_iter().map(|(a, b)| (a, b)).unzip();
 
     // Graph
     let trace = Scatter::new(x, y)
@@ -46,9 +41,11 @@ pub(crate) fn plot_cdf(data: Vec<(f64, f64)>) -> String {
 }
 
 // https://users.rust-lang.org/t/observed-cdf-of-a-vector/77566/4
-pub(crate) fn cdf(x: &[f64]) -> Vec<(f64, f64)> {
-    let ln = x.len() as f64;
-    let mut x_ord = x.to_vec();
+fn cdf(data: &Data<Vec<f64>>) -> Vec<(f64, f64)> {
+    let ln = data.len() as f64;
+    // TODO: can we avoid the clone here?
+    let mut x_ord: Vec<f64> = data.iter().cloned().collect();
+
     x_ord.sort_by(|a, b| a.partial_cmp(b).unwrap());
 
     if let Some(mut previous) = x_ord.get(0).map(|&f| f) {
@@ -64,5 +61,34 @@ pub(crate) fn cdf(x: &[f64]) -> Vec<(f64, f64)> {
         cdf
     } else {
         Vec::new()
+    }
+}
+
+#[derive(Debug)]
+pub struct StatsReport {
+    median: f64,
+    mean: Option<f64>,
+    p0: f64,
+    p25: f64,
+    p50: f64,
+    p75: f64,
+    p90: f64,
+    p99: f64,
+    p100: f64,
+}
+
+impl StatsReport {
+    pub(crate) fn new(data: &mut Data<Vec<f64>>) -> Self {
+        StatsReport {
+            median: data.median(),
+            mean: data.mean(),
+            p0: data.percentile(0),
+            p25: data.percentile(25),
+            p50: data.percentile(50),
+            p75: data.percentile(75),
+            p90: data.percentile(90),
+            p99: data.percentile(99),
+            p100: data.percentile(100),
+        }
     }
 }

@@ -1,5 +1,6 @@
 use crate::error::BoarError;
 use crate::error::Result;
+use crate::stats::StatsReport;
 use crate::stats::ToStats;
 use byte_unit::Byte;
 use regex::Regex;
@@ -29,21 +30,20 @@ fn main() -> Result<()> {
         // Run
         let mut server = setup.run_server();
 
-        let mut metrics = Vec::new();
+        let mut data = Vec::new();
         for i in 1..=setup.run_count {
-            let log = setup.run_client();
-            let metric = setup.metric.parse_metric(&log);
+            let metric = setup.run_client();
             println!(
                 "Run [{}/{}]: Download duration: {:?}",
                 i, setup.run_count, metric
             );
-            metrics.push(metric.as_secs_f64());
+            data.push(metric.as_secs_f64());
         }
 
         server.kill().unwrap();
 
         // Report
-        let report = network_setup.report(metrics, &setup.download_payload_size, setup.run_count);
+        let report = network_setup.report(data, &setup.download_payload_size, setup.run_count);
 
         println!("{:#?}", report);
     }
@@ -66,6 +66,7 @@ struct NetworkSetup {
 
 #[derive(Debug)]
 struct Report {
+    stats_report: StatsReport,
     download_size: String,
     run_count: u16,
     network_setup: NetworkSetup,
@@ -85,12 +86,14 @@ impl NetworkSetup {
         }
     }
 
-    fn report(&self, metrics: Vec<f64>, download_size: &str, run_count: u16) -> Report {
-        let data = stats::gen_cdf(&metrics);
+    fn report(&self, data: Vec<f64>, download_size: &str, run_count: u16) -> Report {
+        let mut data = statrs::statistics::Data::new(data);
 
-        let cdf_plot = stats::plot_cdf(data);
+        let cdf_plot = stats::plot_cdf(&data);
+        let stats_report = StatsReport::new(&mut data);
 
         let report = Report {
+            stats_report,
             network_setup: self.clone(),
             cdf_plot: Some(cdf_plot),
             download_size: download_size.to_owned(),
@@ -177,7 +180,7 @@ impl<S: ToStats> RunSetup<S> {
         server
     }
 
-    fn run_client(&self) -> String {
+    fn run_client(&self) -> S::Metric {
         let client = &self.client_binary;
 
         let download_bytes = Byte::parse_str(&self.download_payload_size, true).unwrap();
@@ -202,7 +205,9 @@ impl<S: ToStats> RunSetup<S> {
         // dbg!("client cmd ---: {:?}", &cmd);
 
         let res = cmd.output().unwrap();
-        String::from_utf8(res.stderr).unwrap()
+        let log = String::from_utf8(res.stderr).unwrap();
+
+        self.metric.parse_metric(&log)
     }
 }
 
