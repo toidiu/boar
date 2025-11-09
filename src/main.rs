@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use crate::error::BoarError;
 use crate::error::Result;
 use crate::stats::StatsReport;
@@ -12,48 +14,48 @@ use std::time::Duration;
 
 mod args;
 mod error;
+mod report;
 mod stats;
 
 fn main() -> Result<()> {
     // Cli
-    let (setup, plan) = args::parse();
+    let plan = args::parse();
     // dbg!(&setup, &plan);
 
     println!("Executing: {:?}", &plan);
-    println!("Executing: {:?}", &setup);
 
-    for network_setup in &plan.network_setups {
-        // Network
-        network_setup.cleanup()?;
-        network_setup.setup()?;
+    // Network
+    plan.network.cleanup()?;
+    plan.network.create()?;
 
-        // Run
-        let mut server = setup.run_server();
+    // Run
+    let mut server = plan.run_setup.run_server();
 
-        let mut data = Vec::new();
-        for i in 1..=setup.run_count {
-            let metric = setup.run_client();
-            println!(
-                "Run [{}/{}]: Download duration: {:?}",
-                i, setup.run_count, metric
-            );
-            data.push(metric.as_secs_f64());
-        }
-
-        server.kill().unwrap();
-
-        // Report
-        let report = network_setup.report(data, &setup.download_payload_size, setup.run_count);
-
-        println!("{:#?}", report);
+    let mut data = Vec::new();
+    for i in 1..=plan.run_setup.run_count {
+        let logs = plan.run_setup.run_client();
+        let metric = DownloadDuration::new_from_logs(&logs);
+        println!(
+            "Run [{}/{}]: Download duration: {:?}",
+            i, plan.run_setup.run_count, metric
+        );
+        data.push(metric.as_f64());
     }
+
+    server.kill().unwrap();
+
+    // Report
+    let report = report::Report::new(&plan, data);
+
+    println!("{:#?}", report);
 
     Ok(())
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct ExecutionPlan {
-    network_setups: Vec<NetworkSetup>,
+    network: NetworkSetup,
+    run_setup: RunSetup,
 }
 
 #[derive(Debug, Clone)]
@@ -62,15 +64,6 @@ struct NetworkSetup {
     delay_ms: u64,
     loss_pct: u64,
     rate_mbit: u64,
-}
-
-#[derive(Debug)]
-struct Report {
-    stats_report: StatsReport,
-    download_size: String,
-    run_count: u16,
-    network_setup: NetworkSetup,
-    cdf_plot: Option<String>,
 }
 
 impl NetworkSetup {
@@ -84,23 +77,6 @@ impl NetworkSetup {
             // Default values in script
             rate_mbit: 20,
         }
-    }
-
-    fn report(&self, data: Vec<f64>, download_size: &str, run_count: u16) -> Report {
-        let mut data = statrs::statistics::Data::new(data);
-
-        let cdf_plot = stats::plot_cdf(&data);
-        let stats_report = StatsReport::new(&mut data);
-
-        let report = Report {
-            stats_report,
-            network_setup: self.clone(),
-            cdf_plot: Some(cdf_plot),
-            download_size: download_size.to_owned(),
-            run_count,
-        };
-
-        report
     }
 
     fn cleanup(&self) -> Result<()> {
@@ -120,7 +96,7 @@ impl NetworkSetup {
         }
     }
 
-    fn setup(&self) -> Result<()> {
+    fn create(&self) -> Result<()> {
         let res = Command::new("sh")
             .arg("-c")
             .arg(&self.cmd)
@@ -141,10 +117,8 @@ impl NetworkSetup {
     }
 }
 
-impl ExecutionPlan {}
-
-#[derive(Debug)]
-struct RunSetup<S: ToStats> {
+#[derive(Debug, Clone)]
+struct RunSetup {
     client_binary: String,
     client_logging: String,
     server_binary: String,
@@ -152,10 +126,9 @@ struct RunSetup<S: ToStats> {
     server_port: String,
     download_payload_size: String,
     run_count: u16,
-    metric: S,
 }
 
-impl<S: ToStats> RunSetup<S> {
+impl RunSetup {
     fn run_server(&self) -> Child {
         let server = &self.server_binary;
         let server = format!("{:?} --address 0.0.0.0:{}", server, self.server_port);
@@ -180,7 +153,7 @@ impl<S: ToStats> RunSetup<S> {
         server
     }
 
-    fn run_client(&self) -> S::Metric {
+    fn run_client(&self) -> String {
         let client = &self.client_binary;
 
         let download_bytes = Byte::parse_str(&self.download_payload_size, true).unwrap();
@@ -205,21 +178,23 @@ impl<S: ToStats> RunSetup<S> {
         // dbg!("client cmd ---: {:?}", &cmd);
 
         let res = cmd.output().unwrap();
-        let log = String::from_utf8(res.stderr).unwrap();
+        let logs = String::from_utf8(res.stderr).unwrap();
 
-        self.metric.parse_metric(&log)
+        logs
     }
 }
 
 #[derive(Default, Debug)]
-struct DownloadDuration;
+struct DownloadDuration {
+    duration: Duration,
+}
 
 impl ToStats for DownloadDuration {
     type Metric = Duration;
 
     // TODO: use named groups to match and parse more efficiently with just Regex:
     // https://stackoverflow.com/a/628563
-    fn parse_metric(&self, log: &str) -> Self::Metric {
+    fn new_from_logs(logs: &str) -> Self {
         // Regex to get "received in 12.34ms"
         //
         // match float: https://stackoverflow.com/a/12643073
@@ -228,28 +203,34 @@ impl ToStats for DownloadDuration {
         // match "ms" or "s":
         // [m]?s
         let re = Regex::new(r"received in [+-]?([0-9]*[.])?[0-9]+[m]?s").unwrap();
-        let log = re.captures(log).unwrap().get(0).unwrap().as_str();
+        let logs = re.captures(logs).unwrap().get(0).unwrap().as_str();
 
         // trim text and parse download duration
-        let download_duraiton = log
+        let download_duraiton = logs
             .trim_start_matches("received in ")
             .trim_end_matches("ms")
             .trim_end_matches("s")
             .trim();
-        // dbg!("trimmed log: {} {}", log, download_duraiton);
+        // dbg!("trimmed logs: {} {}", logs, download_duraiton);
 
         let download_duration = {
             let duration = download_duraiton.parse::<f32>().unwrap();
 
-            if log.ends_with("ms") {
+            if logs.ends_with("ms") {
                 duration
-            } else if log.ends_with("s") {
+            } else if logs.ends_with("s") {
                 duration * 1000.0
             } else {
-                unreachable!("Expect ms or s. Instead got: {}", log)
+                unreachable!("Expect ms or s. Instead got: {}", logs)
             }
         };
 
-        Duration::from_millis(download_duration as u64)
+        DownloadDuration {
+            duration: Duration::from_millis(download_duration as u64),
+        }
+    }
+
+    fn as_f64(&self) -> f64 {
+        self.duration.as_secs_f64()
     }
 }

@@ -1,4 +1,3 @@
-use crate::DownloadDuration;
 use crate::ExecutionPlan;
 use crate::NetworkSetup;
 use crate::RunSetup;
@@ -15,7 +14,7 @@ struct Args {
     run_count: u16,
 }
 
-pub(crate) fn parse() -> (RunSetup<DownloadDuration>, ExecutionPlan) {
+pub(crate) fn parse() -> ExecutionPlan {
     let args = Args::parse();
 
     cfg_if::cfg_if! {
@@ -42,15 +41,11 @@ pub(crate) fn parse() -> (RunSetup<DownloadDuration>, ExecutionPlan) {
 
         // Testing
         download_payload_size: args.download_size,
-        metric: DownloadDuration::default(),
         run_count: args.run_count,
     };
 
-    let plan = ExecutionPlan {
-        network_setups: vec![
-            // NetworkSetup::new(network_setup.clone()),
-            NetworkSetup::new(network_setup),
-        ],
-    };
-    (run_setup, plan)
+    ExecutionPlan {
+        network: NetworkSetup::new(network_setup),
+        run_setup,
+    }
 }

@@ -1,11 +1,13 @@
 use plotly::{Scatter, layout::GridPattern, layout::Layout, layout::LayoutGrid};
-use statrs::statistics::{Data, Distribution, Median, OrderStatistics};
+use statrs::statistics::{Data, Distribution, OrderStatistics};
 use std::fmt::Debug;
 
 pub trait ToStats {
     type Metric: Debug;
 
-    fn parse_metric(&self, log: &str) -> Self::Metric;
+    fn as_f64(&self) -> f64;
+
+    fn new_from_logs(logs: &str) -> Self;
 }
 
 pub(crate) fn plot_cdf(data: &Data<Vec<f64>>) -> String {
