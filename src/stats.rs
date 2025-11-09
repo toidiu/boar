@@ -78,20 +78,27 @@ pub struct StatsReport {
     p90: f64,
     p99: f64,
     p100: f64,
+    trimean: f64,
 }
 
 impl StatsReport {
     pub(crate) fn new(data: &mut Data<Vec<f64>>) -> Self {
+        let p25 = data.percentile(25);
+        let p50 = data.percentile(50);
+        let p75 = data.percentile(75);
+        let trimean = (p25 + (2.0 * p50) + p75) / 4.0;
+
         StatsReport {
             median: data.median(),
             mean: data.mean(),
             p0: data.percentile(0),
-            p25: data.percentile(25),
-            p50: data.percentile(50),
-            p75: data.percentile(75),
+            p25,
+            p50,
+            p75,
             p90: data.percentile(90),
             p99: data.percentile(99),
             p100: data.percentile(100),
+            trimean,
         }
     }
 }
