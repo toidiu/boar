@@ -10,3 +10,4 @@ clap = { version = "4.5.51", features = ["derive"] }
 plotly = "0.13.5"
 regex = "1.12.2"
 statrs = "0.18.0"
+uuid = { version = "1.18.1", features = ["v4"] }

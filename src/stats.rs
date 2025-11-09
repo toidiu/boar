@@ -1,3 +1,4 @@
+use crate::ExecutionPlan;
 use plotly::{Scatter, layout::GridPattern, layout::Layout, layout::LayoutGrid};
 use statrs::statistics::{Data, Distribution, OrderStatistics};
 use std::fmt::Debug;
@@ -10,7 +11,7 @@ pub trait ToStats {
     fn new_from_logs(logs: &str) -> Self;
 }
 
-pub(crate) fn plot_cdf(data: &Data<Vec<f64>>) -> String {
+pub(crate) fn plot_cdf(data: &Data<Vec<f64>>, plan: &ExecutionPlan) -> String {
     let cdf_data = cdf(data);
 
     let mut plot = plotly::Plot::new();
@@ -36,8 +37,8 @@ pub(crate) fn plot_cdf(data: &Data<Vec<f64>>) -> String {
                 .pattern(GridPattern::Independent),
         );
     plot.set_layout(layout);
-    let file = "plot.html";
-    plot.write_html(file);
+    let file = format!("cdf_plot_{}.html", plan.uuid);
+    plot.write_html(&file);
 
     file.to_owned()
 }

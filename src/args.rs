@@ -1,7 +1,9 @@
+use crate::EndpointSetup;
 use crate::ExecutionPlan;
 use crate::NetworkSetup;
-use crate::RunSetup;
+use byte_unit::Byte;
 use clap::Parser;
+use uuid::Uuid;
 
 /// Simple program to greet a person
 #[derive(Parser, Debug)]
@@ -27,7 +29,7 @@ pub(crate) fn parse() -> ExecutionPlan {
         }
     }
 
-    let run_setup = RunSetup {
+    let run_setup = EndpointSetup {
         // Client
         // cargo build --bin quiche-client
         client_binary: "../quiche/target/debug/quiche-client".to_string(),
@@ -38,14 +40,16 @@ pub(crate) fn parse() -> ExecutionPlan {
         server_binary: "../quiche/target/debug/examples/async_http3_server".to_string(),
         server_ip,
         server_port: "9999".to_string(),
-
-        // Testing
-        download_payload_size: args.download_size,
-        run_count: args.run_count,
     };
 
+    let download_bytes = Byte::parse_str(args.download_size, true).unwrap();
+
     ExecutionPlan {
+        uuid: Uuid::new_v4(),
         network: NetworkSetup::new(network_setup),
-        run_setup,
+        endpoint: run_setup,
+
+        download_bytes,
+        run_count: args.run_count,
     }
 }

@@ -11,6 +11,7 @@ use std::process::Child;
 use std::process::Command;
 use std::process::Stdio;
 use std::time::Duration;
+use uuid::Uuid;
 
 mod args;
 mod error;
@@ -29,15 +30,15 @@ fn main() -> Result<()> {
     plan.network.create()?;
 
     // Run
-    let mut server = plan.run_setup.run_server();
+    let mut server = plan.endpoint.run_server();
 
     let mut data = Vec::new();
-    for i in 1..=plan.run_setup.run_count {
-        let logs = plan.run_setup.run_client();
+    for i in 1..=plan.run_count {
+        let logs = plan.endpoint.run_client(&plan.download_bytes);
         let metric = DownloadDuration::new_from_logs(&logs);
         println!(
             "Run [{}/{}]: Download duration: {:?}",
-            i, plan.run_setup.run_count, metric
+            i, plan.run_count, metric
         );
         data.push(metric.as_f64());
     }
@@ -54,8 +55,11 @@ fn main() -> Result<()> {
 
 #[derive(Debug, Clone)]
 struct ExecutionPlan {
+    uuid: Uuid,
     network: NetworkSetup,
-    run_setup: RunSetup,
+    endpoint: EndpointSetup,
+    download_bytes: Byte,
+    run_count: u16,
 }
 
 #[derive(Debug, Clone)]
@@ -118,17 +122,15 @@ impl NetworkSetup {
 }
 
 #[derive(Debug, Clone)]
-struct RunSetup {
+struct EndpointSetup {
     client_binary: String,
     client_logging: String,
     server_binary: String,
     server_ip: String,
     server_port: String,
-    download_payload_size: String,
-    run_count: u16,
 }
 
-impl RunSetup {
+impl EndpointSetup {
     fn run_server(&self) -> Child {
         let server = &self.server_binary;
         let server = format!("{:?} --address 0.0.0.0:{}", server, self.server_port);
@@ -153,10 +155,10 @@ impl RunSetup {
         server
     }
 
-    fn run_client(&self) -> String {
+    fn run_client(&self, download_bytes: &Byte) -> String {
         let client = &self.client_binary;
 
-        let download_bytes = Byte::parse_str(&self.download_payload_size, true).unwrap();
+        // let download_bytes = Byte::parse_str(plan.download_payload_size, true).unwrap();
         let client = format!(
             "{} {} https://test.com/stream-bytes/{} --no-verify --connect-to  {}:{} --idle-timeout 5",
             self.client_logging, client, download_bytes, self.server_ip, self.server_port

@@ -13,7 +13,7 @@ impl Report {
     pub fn new(plan: &ExecutionPlan, data: Vec<f64>) -> Self {
         let mut data = statrs::statistics::Data::new(data);
 
-        let cdf_plot = stats::plot_cdf(&data);
+        let cdf_plot = stats::plot_cdf(&data, &plan);
         let stats_report = StatsReport::new(&mut data);
 
         let report = Report {
