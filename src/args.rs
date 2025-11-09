@@ -48,7 +48,7 @@ pub(crate) fn parse() -> (RunSetup<DownloadDuration>, ExecutionPlan) {
 
     let plan = ExecutionPlan {
         network_setups: vec![
-            NetworkSetup::new(network_setup.clone()),
+            // NetworkSetup::new(network_setup.clone()),
             NetworkSetup::new(network_setup),
         ],
     };
