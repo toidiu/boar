@@ -32,12 +32,12 @@ pub(crate) fn parse() -> ExecutionPlan {
     let run_setup = EndpointSetup {
         // Client
         // cargo build --bin quiche-client
-        client_binary: "../quiche/target/debug/quiche-client".to_string(),
+        client_binary: "deps/quiche/target/debug/quiche-client".to_string(),
         client_logging: "RUST_LOG=info".to_string(),
 
         // Server
         // cargo build --example async_http3_server
-        server_binary: "../quiche/target/debug/examples/async_http3_server".to_string(),
+        server_binary: "deps/quiche/target/debug/examples/async_http3_server".to_string(),
         server_ip,
         server_port: "9999".to_string(),
     };

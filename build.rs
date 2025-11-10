@@ -8,20 +8,22 @@ fn main() {
     env::set_current_dir(&DEPS_QUICHE).expect("Failed to change directory");
 
     // cargo build --bin quiche-client
-    Command::new("cargo")
+    let s = Command::new("cargo")
         .arg("build")
         .arg("--bin")
         .arg("quiche-client")
         .status()
         .unwrap();
+    assert!(s.success());
 
     // cargo build --example async_http3_server
-    Command::new("cargo")
+    let s = Command::new("cargo")
         .arg("build")
         .arg("--example")
         .arg("async_http3_server")
         .status()
         .unwrap();
+    assert!(s.success());
 
     // Tell Cargo to re-run the build script if this file changes
     println!("cargo:rerun-if-changed=build.rs");
