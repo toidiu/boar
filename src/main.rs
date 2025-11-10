@@ -23,7 +23,7 @@ fn main() -> Result<()> {
     let plan = args::parse();
     // dbg!(&setup, &plan);
 
-    println!("Executing: {:?}", &plan);
+    println!("Executing: {:#?}", &plan);
 
     // Network
     plan.network.cleanup()?;
