@@ -25,7 +25,7 @@ fn main() {
         .unwrap();
     assert!(s.success());
 
-    // Tell Cargo to re-run the build script if this file changes
-    println!("cargo:rerun-if-changed=build.rs");
-    println!("cargo:rerun-if-changed=deps/quiche/");
+    println!("cargo:rerun-if-changed=deps/quiche/quiche");
+    println!("cargo:rerun-if-changed=deps/quiche/tokio-quiche");
+    println!("cargo:rerun-if-changed=deps/quiche/apps");
 }
