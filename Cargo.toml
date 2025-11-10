@@ -2,6 +2,7 @@
 name = "boar"
 version = "0.1.0"
 edition = "2024"
+build = "build.rs"
 
 [dependencies]
 byte-unit = "5.1.6"
