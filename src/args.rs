@@ -14,6 +14,14 @@ struct Args {
 
     #[arg(short, default_value_t = 5)]
     run_count: u16,
+
+    /// Congestion Control algorithm
+    #[arg(long,  default_value_t = default_cc_algorithm())]
+    pub cc_algorithm: String,
+}
+
+fn default_cc_algorithm() -> String {
+    "bbr2_gcongestion".to_string()
 }
 
 pub(crate) fn parse() -> ExecutionPlan {
@@ -40,6 +48,7 @@ pub(crate) fn parse() -> ExecutionPlan {
         server_binary: "deps/quiche/target/debug/examples/async_http3_server".to_string(),
         server_ip,
         server_port: "9999".to_string(),
+        server_cca: args.cc_algorithm,
     };
 
     let download_bytes = Byte::parse_str(args.download_size, true).unwrap();

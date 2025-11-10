@@ -128,12 +128,16 @@ struct EndpointSetup {
     server_binary: String,
     server_ip: String,
     server_port: String,
+    server_cca: String,
 }
 
 impl EndpointSetup {
     fn run_server(&self) -> Child {
         let server = &self.server_binary;
-        let server = format!("{:?} --address 0.0.0.0:{}", server, self.server_port);
+        let server = format!(
+            "{:?} --address 0.0.0.0:{}  --cc-algorithm {}",
+            server, self.server_port, self.server_cca
+        );
 
         cfg_if::cfg_if! {
             if #[cfg(target_os = "linux")] {
