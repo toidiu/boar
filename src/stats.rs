@@ -11,7 +11,7 @@ pub trait ToStats {
     fn new_from_logs(logs: &str) -> Self;
 }
 
-pub(crate) fn plot_cdf(data: &Data<Vec<f64>>, plan: &ExecutionPlan) -> String {
+pub(crate) fn plot_cdf(dir: &str, data: &Data<Vec<f64>>, plan: &ExecutionPlan) -> String {
     let cdf_data = cdf(data);
 
     let mut plot = plotly::Plot::new();
@@ -37,7 +37,7 @@ pub(crate) fn plot_cdf(data: &Data<Vec<f64>>, plan: &ExecutionPlan) -> String {
                 .pattern(GridPattern::Independent),
         );
     plot.set_layout(layout);
-    let file = format!("cdf_plot_{}.html", plan.uuid);
+    let file = format!("{}/cdf_plot_{}.html", dir, plan.uuid);
     plot.write_html(&file);
 
     file.to_owned()

@@ -40,7 +40,7 @@ fn main() -> Result<()> {
             "Run [{}/{}]: Download duration: {:?}",
             i, plan.run_count, metric
         );
-        data.push(metric.as_f64());
+        data.push(metric);
     }
 
     server.kill().unwrap();
