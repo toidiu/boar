@@ -1,5 +1,8 @@
 use crate::ExecutionPlan;
-use plotly::{Scatter, layout::GridPattern, layout::Layout, layout::LayoutGrid};
+use plotly::{
+    Scatter,
+    layout::{GridPattern, Layout, LayoutGrid},
+};
 use statrs::statistics::{Data, Distribution, OrderStatistics};
 use std::fmt::Debug;
 

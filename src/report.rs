@@ -1,9 +1,8 @@
-use crate::AggregateStats;
-use crate::ExecutionPlan;
-use crate::Stats;
-use std::fs::File;
-use std::fs::create_dir_all;
-use std::io::Write;
+use crate::{AggregateStats, ExecutionPlan, Stats};
+use std::{
+    fs::{File, create_dir_all},
+    io::Write,
+};
 
 #[allow(dead_code)]
 #[derive(Debug)]

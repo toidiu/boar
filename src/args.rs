@@ -1,6 +1,4 @@
-use crate::EndpointSetup;
-use crate::ExecutionPlan;
-use crate::NetworkSetup;
+use crate::{EndpointSetup, ExecutionPlan, NetworkSetup};
 use byte_unit::Byte;
 use clap::Parser;
 use uuid::Uuid;

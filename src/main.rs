@@ -1,15 +1,14 @@
-use crate::error::BoarError;
-use crate::error::Result;
-use crate::stats::AggregateStats;
-use crate::stats::Stats;
-use crate::stats::ToStatMetric;
+use crate::{
+    error::{BoarError, Result},
+    stats::{AggregateStats, Stats, ToStatMetric},
+};
 use byte_unit::Byte;
 use regex::Regex;
-use std::fmt::Debug;
-use std::process::Child;
-use std::process::Command;
-use std::process::Stdio;
-use std::time::Duration;
+use std::{
+    fmt::Debug,
+    process::{Child, Command, Stdio},
+    time::Duration,
+};
 use uuid::Uuid;
 
 mod args;

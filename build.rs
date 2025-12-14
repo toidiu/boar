@@ -1,5 +1,4 @@
-use std::env;
-use std::process::Command;
+use std::{env, process::Command};
 
 const DEPS_QUICHE: &str = "deps/quiche";
 
