@@ -1,34 +1,29 @@
+use crate::AggregateStats;
 use crate::ExecutionPlan;
-use crate::StatsReport;
-use crate::stats;
-use crate::stats::ToStats;
+use crate::Stats;
 use std::fs::File;
 use std::fs::create_dir_all;
 use std::io::Write;
 
 #[derive(Debug)]
 pub(crate) struct Report {
-    pub stats_report: StatsReport,
+    pub aggregate: AggregateStats,
     pub plan: ExecutionPlan,
     pub cdf_plot: Option<String>,
 }
 
 impl Report {
-    pub fn new(plan: &ExecutionPlan, data: Vec<impl ToStats + std::fmt::Debug>) -> Self {
+    pub fn new(plan: &ExecutionPlan, mut stats: Stats) -> Self {
         let dir = Self::create_report_dir(plan);
 
         let data_file = format!("{}/data.txt", &dir);
         let mut data_file = File::create(data_file).unwrap();
-        write!(&mut data_file, "{:#?}", data).unwrap();
+        write!(&mut data_file, "{:#?}", stats).unwrap();
 
-        let data: Vec<f64> = data.iter().map(|d| d.as_f64()).collect();
-        let mut data = statrs::statistics::Data::new(data);
+        let cdf_plot = stats.plot_cdf(&dir, &plan);
 
-        let cdf_plot = stats::plot_cdf(&dir, &data, &plan);
-
-        let stats_report = StatsReport::new(&mut data);
         let report = Report {
-            stats_report,
+            aggregate: stats.aggregate(),
             plan: plan.clone(),
             cdf_plot: Some(cdf_plot),
         };

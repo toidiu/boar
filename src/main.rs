@@ -2,8 +2,9 @@
 
 use crate::error::BoarError;
 use crate::error::Result;
-use crate::stats::StatsReport;
-use crate::stats::ToStats;
+use crate::stats::AggregateStats;
+use crate::stats::Stats;
+use crate::stats::ToStatMetric;
 use byte_unit::Byte;
 use regex::Regex;
 use std::fmt::Debug;
@@ -32,21 +33,22 @@ fn main() -> Result<()> {
     // Run
     let mut server = plan.endpoint.run_server();
 
-    let mut data = Vec::new();
+    let mut metrics: Vec<Box<dyn ToStatMetric>> = Vec::new();
     for i in 1..=plan.run_count {
         let logs = plan.endpoint.run_client(&plan.download_bytes);
-        let metric = DownloadDuration::new_from_logs(&logs);
+        let metric = DownloadDurationMetric::new_from_logs(&logs);
         println!(
             "Run [{}/{}]: Download duration: {:?}",
             i, plan.run_count, metric
         );
-        data.push(metric);
+        metrics.push(Box::new(metric));
     }
+    let s = Stats::new(metrics);
 
     server.kill().unwrap();
 
     // Report
-    let report = report::Report::new(&plan, data);
+    let report = report::Report::new(&plan, s);
 
     println!("{:#?}", report);
 
@@ -191,13 +193,11 @@ impl EndpointSetup {
 }
 
 #[derive(Default, Debug)]
-struct DownloadDuration {
+struct DownloadDurationMetric {
     duration: Duration,
 }
 
-impl ToStats for DownloadDuration {
-    type Metric = Duration;
-
+impl DownloadDurationMetric {
     // TODO: use named groups to match and parse more efficiently with just Regex:
     // https://stackoverflow.com/a/628563
     fn new_from_logs(logs: &str) -> Self {
@@ -231,11 +231,13 @@ impl ToStats for DownloadDuration {
             }
         };
 
-        DownloadDuration {
+        DownloadDurationMetric {
             duration: Duration::from_millis(download_duration as u64),
         }
     }
+}
 
+impl ToStatMetric for DownloadDurationMetric {
     fn as_f64(&self) -> f64 {
         self.duration.as_secs_f64()
     }

@@ -3,72 +3,111 @@ use plotly::{Scatter, layout::GridPattern, layout::Layout, layout::LayoutGrid};
 use statrs::statistics::{Data, Distribution, OrderStatistics};
 use std::fmt::Debug;
 
-pub trait ToStats {
-    type Metric: Debug;
-
+// A metric over which we can calculate statistics.
+pub trait ToStatMetric: Debug {
     fn as_f64(&self) -> f64;
-
-    fn new_from_logs(logs: &str) -> Self;
 }
 
-pub(crate) fn plot_cdf(dir: &str, data: &Data<Vec<f64>>, plan: &ExecutionPlan) -> String {
-    let cdf_data = cdf(data);
-
-    let mut plot = plotly::Plot::new();
-    let (x, y): (Vec<_>, Vec<_>) = cdf_data.into_iter().map(|(a, b)| (a, b)).unzip();
-
-    // Graph
-    let trace = Scatter::new(x, y)
-        // dont show legend for CDF
-        .show_legend(false)
-        .x_axis("x")
-        .y_axis("y");
-    plot.add_trace(trace);
-
-    let title = format!("{}", "title");
-    let layout = Layout::new()
-        .title(format!("{} Cumulative distribution function", title))
-        .show_legend(true)
-        .height(1000)
-        .grid(
-            LayoutGrid::new()
-                .rows(1)
-                .columns(1)
-                .pattern(GridPattern::Independent),
-        );
-    plot.set_layout(layout);
-    let file = format!("{}/cdf_plot_{}.html", dir, plan.uuid);
-    plot.write_html(&file);
-
-    file.to_owned()
+#[derive(Debug)]
+pub struct Stats {
+    raw_metrics: Vec<Box<dyn ToStatMetric>>,
+    stat_data: Data<Vec<f64>>,
 }
 
-// https://users.rust-lang.org/t/observed-cdf-of-a-vector/77566/4
-fn cdf(data: &Data<Vec<f64>>) -> Vec<(f64, f64)> {
-    let ln = data.len() as f64;
-    // TODO: can we avoid the clone here?
-    let mut x_ord: Vec<f64> = data.iter().cloned().collect();
+impl Stats {
+    pub fn new(raw_metrics: Vec<Box<dyn ToStatMetric>>) -> Self {
+        let data = {
+            let data_f64: Vec<_> = raw_metrics.iter().map(|metric| metric.as_f64()).collect();
+            statrs::statistics::Data::new(data_f64)
+        };
 
-    x_ord.sort_by(|a, b| a.partial_cmp(b).unwrap());
-
-    if let Some(mut previous) = x_ord.get(0).map(|&f| f) {
-        let mut cdf = Vec::new();
-        for (i, f) in x_ord.into_iter().enumerate() {
-            if f != previous {
-                cdf.push((previous, i as f64 / ln));
-                previous = f;
-            }
+        Stats {
+            raw_metrics,
+            stat_data: data,
         }
+    }
 
-        cdf.push((previous, 1.0));
-        cdf
-    } else {
-        Vec::new()
+    pub fn aggregate(&mut self) -> AggregateStats {
+        let data = &mut self.stat_data;
+
+        let p25 = data.percentile(25);
+        let p50 = data.percentile(50);
+        let p75 = data.percentile(75);
+        let trimean = (p25 + (2.0 * p50) + p75) / 4.0;
+
+        AggregateStats {
+            median: data.median(),
+            mean: data.mean(),
+            p0: data.percentile(0),
+            p25,
+            p50,
+            p75,
+            p90: data.percentile(90),
+            p99: data.percentile(99),
+            p100: data.percentile(100),
+            trimean,
+        }
+    }
+
+    pub(crate) fn plot_cdf(&self, dir: &str, plan: &ExecutionPlan) -> String {
+        let cdf_data = self.cdf();
+
+        let mut plot = plotly::Plot::new();
+        let (x, y): (Vec<_>, Vec<_>) = cdf_data.into_iter().map(|(a, b)| (a, b)).unzip();
+
+        // Graph
+        let trace = Scatter::new(x, y)
+            // dont show legend for CDF
+            .show_legend(false)
+            .x_axis("x")
+            .y_axis("y");
+        plot.add_trace(trace);
+
+        let title = format!("{}", "title");
+        let layout = Layout::new()
+            .title(format!("{} Cumulative distribution function", title))
+            .show_legend(true)
+            .height(1000)
+            .grid(
+                LayoutGrid::new()
+                    .rows(1)
+                    .columns(1)
+                    .pattern(GridPattern::Independent),
+            );
+        plot.set_layout(layout);
+        let file = format!("{}/cdf_plot_{}.html", dir, plan.uuid);
+        plot.write_html(&file);
+
+        file.to_owned()
+    }
+
+    // https://users.rust-lang.org/t/observed-cdf-of-a-vector/77566/4
+    fn cdf(&self) -> Vec<(f64, f64)> {
+        let ln = self.stat_data.len() as f64;
+        // TODO: can we avoid the clone here?
+        let mut x_ord: Vec<f64> = self.stat_data.iter().cloned().collect();
+
+        x_ord.sort_by(|a, b| a.partial_cmp(b).unwrap());
+
+        if let Some(mut previous) = x_ord.get(0).map(|&f| f) {
+            let mut cdf = Vec::new();
+            for (i, f) in x_ord.into_iter().enumerate() {
+                if f != previous {
+                    cdf.push((previous, i as f64 / ln));
+                    previous = f;
+                }
+            }
+
+            cdf.push((previous, 1.0));
+            cdf
+        } else {
+            Vec::new()
+        }
     }
 }
 
 #[derive(Debug)]
-pub struct StatsReport {
+pub struct AggregateStats {
     median: f64,
     mean: Option<f64>,
     p0: f64,
@@ -81,14 +120,14 @@ pub struct StatsReport {
     trimean: f64,
 }
 
-impl StatsReport {
-    pub(crate) fn new(data: &mut Data<Vec<f64>>) -> Self {
+impl AggregateStats {
+    fn new(data: &mut Data<Vec<f64>>) -> Self {
         let p25 = data.percentile(25);
         let p50 = data.percentile(50);
         let p75 = data.percentile(75);
         let trimean = (p25 + (2.0 * p50) + p75) / 4.0;
 
-        StatsReport {
+        AggregateStats {
             median: data.median(),
             mean: data.mean(),
             p0: data.percentile(0),
