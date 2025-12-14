@@ -10,6 +10,7 @@ pub trait ToStatMetric: Debug {
 
 #[derive(Debug)]
 pub struct Stats {
+    #[allow(dead_code)]
     raw_metrics: Vec<Box<dyn ToStatMetric>>,
     stat_data: Data<Vec<f64>>,
 }
@@ -28,25 +29,7 @@ impl Stats {
     }
 
     pub fn aggregate(&mut self) -> AggregateStats {
-        let data = &mut self.stat_data;
-
-        let p25 = data.percentile(25);
-        let p50 = data.percentile(50);
-        let p75 = data.percentile(75);
-        let trimean = (p25 + (2.0 * p50) + p75) / 4.0;
-
-        AggregateStats {
-            median: data.median(),
-            mean: data.mean(),
-            p0: data.percentile(0),
-            p25,
-            p50,
-            p75,
-            p90: data.percentile(90),
-            p99: data.percentile(99),
-            p100: data.percentile(100),
-            trimean,
-        }
+        AggregateStats::new(&mut self.stat_data)
     }
 
     pub(crate) fn plot_cdf(&self, dir: &str, plan: &ExecutionPlan) -> String {
@@ -106,6 +89,7 @@ impl Stats {
     }
 }
 
+#[allow(dead_code)]
 #[derive(Debug)]
 pub struct AggregateStats {
     median: f64,

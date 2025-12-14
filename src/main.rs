@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 use crate::error::BoarError;
 use crate::error::Result;
 use crate::stats::AggregateStats;
@@ -64,6 +62,7 @@ struct ExecutionPlan {
     run_count: u16,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone)]
 struct NetworkSetup {
     cmd: String,

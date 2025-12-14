@@ -5,6 +5,7 @@ use std::fs::File;
 use std::fs::create_dir_all;
 use std::io::Write;
 
+#[allow(dead_code)]
 #[derive(Debug)]
 pub(crate) struct Report {
     pub aggregate: AggregateStats,
