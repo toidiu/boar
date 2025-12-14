@@ -98,7 +98,7 @@ impl NetworkSetup {
         if res.status.success() {
             Ok(())
         } else {
-            Err(BoarError::Script)
+            Err(BoarError::Script("NetworkSetup cleanup".to_string()))
         }
     }
 
@@ -118,7 +118,7 @@ impl NetworkSetup {
         if res.status.success() {
             Ok(())
         } else {
-            Err(BoarError::Script)
+            Err(BoarError::Script("NetworkSetup create".to_string()))
         }
     }
 }
