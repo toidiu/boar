@@ -1,4 +1,5 @@
 use crate::ExecutionPlan;
+use convert_case::ccase;
 use plotly::{
     Scatter,
     layout::{GridPattern, Layout, LayoutGrid},
@@ -70,7 +71,13 @@ impl Stats {
                     .pattern(GridPattern::Independent),
             );
         plot.set_layout(layout);
-        let file = format!("{}/cdf_plot_{}.html", dir, plan.uuid);
+
+        let file = format!(
+            "{}/{}_cdf_plot_{}.html",
+            dir,
+            ccase!(snake, &self.name),
+            plan.uuid
+        );
         plot.write_html(&file);
 
         file.to_owned()
