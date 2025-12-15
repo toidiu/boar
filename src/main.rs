@@ -1,13 +1,11 @@
 use crate::{
     error::{BoarError, Result},
-    stats::{AggregateStats, Stats, ToStatMetric},
+    stats::{Stats, delivery_rate::DeliveryRate, download_duration::DownloadDuration},
 };
 use byte_unit::Byte;
-use regex::Regex;
 use std::{
     fmt::Debug,
     process::{Child, Command, Stdio},
-    time::Duration,
 };
 use uuid::Uuid;
 
@@ -21,7 +19,7 @@ fn main() -> Result<()> {
     let plan = args::parse();
     // dbg!(&setup, &plan);
 
-    println!("Executing: {:#?}", &plan);
+    // println!("Executing: {:#?}", &plan);
 
     // Network
     plan.network.cleanup()?;
@@ -30,22 +28,27 @@ fn main() -> Result<()> {
     // Run
     let mut server = plan.endpoint.run_server();
 
-    let mut metrics: Vec<Box<dyn ToStatMetric>> = Vec::new();
+    let mut metrics = Vec::new();
+    let mut ametrics = Vec::new();
     for i in 1..=plan.run_count {
         let logs = plan.endpoint.run_client(&plan.download_bytes);
-        let metric = DownloadDurationMetric::new_from_logs(&logs);
+        let metric = DownloadDuration::new_from_logs(&logs);
+        let ametric = DeliveryRate::new_from_logs(&logs);
         println!(
             "Run [{}/{}]: Download duration: {:?}",
             i, plan.run_count, metric
         );
         metrics.push(Box::new(metric));
+        ametrics.push(Box::new(ametric));
     }
-    let s = Stats::new(metrics);
+
+    let s = Stats::new(metrics.into_iter().map(|ty| ty as _).collect());
+    let ast = Stats::new(ametrics.into_iter().map(|ty| ty as _).collect());
 
     server.kill().unwrap();
 
     // Report
-    let report = report::Report::new(&plan, s);
+    let report = report::Report::new(&plan, vec![s, ast]);
 
     println!("{:#?}", report);
 
@@ -187,60 +190,5 @@ impl EndpointSetup {
         let logs = String::from_utf8(res.stderr).unwrap();
 
         logs
-    }
-}
-
-#[derive(Default, Debug)]
-struct DownloadDurationMetric {
-    duration: Duration,
-}
-
-impl DownloadDurationMetric {
-    // TODO: use named groups to match and parse more efficiently with just Regex:
-    // https://stackoverflow.com/a/628563
-    fn new_from_logs(logs: &str) -> Self {
-        // Regex to get "received in 12.34ms"
-        //
-        // match float: https://stackoverflow.com/a/12643073
-        // [+-]?([0-9]*[.])?[0-9]+
-        //
-        // match "ms" or "s":
-        // [m]?s
-        let re = Regex::new(r"received in [+-]?([0-9]*[.])?[0-9]+[m]?s").unwrap();
-        let logs = re.captures(logs).unwrap().get(0).unwrap().as_str();
-
-        // trim text and parse download duration
-        let download_duraiton = logs
-            .trim_start_matches("received in ")
-            .trim_end_matches("ms")
-            .trim_end_matches("s")
-            .trim();
-        // dbg!("trimmed logs: {} {}", logs, download_duraiton);
-
-        let download_duration = {
-            let duration = download_duraiton.parse::<f32>().unwrap();
-
-            if logs.ends_with("ms") {
-                duration
-            } else if logs.ends_with("s") {
-                duration * 1000.0
-            } else {
-                unreachable!("Expect ms or s. Instead got: {}", logs)
-            }
-        };
-
-        DownloadDurationMetric {
-            duration: Duration::from_millis(download_duration as u64),
-        }
-    }
-}
-
-impl ToStatMetric for DownloadDurationMetric {
-    fn name(&self) -> String {
-        "DownloadDuration".to_string()
-    }
-
-    fn as_f64(&self) -> f64 {
-        self.duration.as_secs_f64()
     }
 }

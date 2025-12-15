@@ -1,4 +1,3 @@
-use crate::ExecutionPlan;
 use convert_case::ccase;
 use plotly::{
     Scatter,
@@ -6,6 +5,9 @@ use plotly::{
 };
 use statrs::statistics::{Data, Distribution, OrderStatistics};
 use std::fmt::Debug;
+
+pub mod delivery_rate;
+pub mod download_duration;
 
 // A metric over which we can calculate statistics.
 pub trait ToStatMetric: Debug {
@@ -41,11 +43,15 @@ impl Stats {
         }
     }
 
+    pub fn name(&self) -> String {
+        ccase!(snake, &self.name)
+    }
+
     pub fn aggregate(&mut self) -> AggregateStats {
         AggregateStats::new(self.name.clone(), &mut self.stat_data)
     }
 
-    pub(crate) fn plot_cdf(&self, dir: &str, plan: &ExecutionPlan) -> String {
+    pub(crate) fn plot_cdf(&self, dir: &str) -> String {
         let cdf_data = self.cdf();
 
         let mut plot = plotly::Plot::new();
@@ -72,12 +78,7 @@ impl Stats {
             );
         plot.set_layout(layout);
 
-        let file = format!(
-            "{}/{}_cdf_plot_{}.html",
-            dir,
-            ccase!(snake, &self.name),
-            plan.uuid
-        );
+        let file = format!("{}/cdf_{}.html", dir, self.name());
         plot.write_html(&file);
 
         file.to_owned()
@@ -109,7 +110,7 @@ impl Stats {
 }
 
 #[allow(dead_code)]
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct AggregateStats {
     name: String,
     median: f64,

@@ -1,4 +1,4 @@
-use crate::{AggregateStats, ExecutionPlan, Stats};
+use crate::{ExecutionPlan, Stats, stats::AggregateStats};
 use std::{
     fs::{File, create_dir_all},
     io::Write,
@@ -7,26 +7,40 @@ use std::{
 #[allow(dead_code)]
 #[derive(Debug)]
 pub(crate) struct Report {
-    pub aggregate: AggregateStats,
     pub plan: ExecutionPlan,
-    pub cdf_plot: Option<String>,
+    stat_report: Vec<StatsReport>,
+}
+
+#[allow(dead_code)]
+#[derive(Debug, Default)]
+struct StatsReport {
+    pub aggregate: AggregateStats,
+    pub cdf_path: String,
 }
 
 impl Report {
-    pub fn new(plan: &ExecutionPlan, mut stats: Stats) -> Self {
+    // TODO make Vec<Stats>
+    // pub fn new(plan: &ExecutionPlan, mut stats: Vec<Stats>) -> Self {
+    pub fn new(plan: &ExecutionPlan, stats: Vec<Stats>) -> Self {
         let dir = Self::create_report_dir(plan);
-
-        let data_file = format!("{}/data.txt", &dir);
-        let mut data_file = File::create(data_file).unwrap();
-        write!(&mut data_file, "{:#?}", stats).unwrap();
-
-        let cdf_plot = stats.plot_cdf(&dir, &plan);
-
-        let report = Report {
-            aggregate: stats.aggregate(),
+        let mut report = Report {
             plan: plan.clone(),
-            cdf_plot: Some(cdf_plot),
+            stat_report: vec![],
         };
+
+        for mut stat in stats {
+            let data_file = format!("{}/data_{}.txt", &dir, stat.name());
+            let mut data_file = File::create(data_file).unwrap();
+            write!(&mut data_file, "{:#?}", stat).unwrap();
+
+            let cdf_path = stat.plot_cdf(&dir);
+            let aggregate = stat.aggregate();
+            let stat_report = StatsReport {
+                aggregate,
+                cdf_path,
+            };
+            report.stat_report.push(stat_report);
+        }
 
         let report_file = format!("{}/report.txt", &dir);
         let mut report_file = File::create(report_file).unwrap();
