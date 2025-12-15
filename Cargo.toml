@@ -2,5 +2,13 @@
 name = "boar"
 version = "0.1.0"
 edition = "2024"
+build = "build.rs"
 
 [dependencies]
+byte-unit = "5.1.6"
+cfg-if = "1.0.4"
+clap = { version = "4.5.51", features = ["derive"] }
+plotly = "0.13.5"
+regex = "1.12.2"
+statrs = "0.18.0"
+uuid = { version = "1.18.1", features = ["v4"] }
