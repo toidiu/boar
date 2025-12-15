@@ -8,11 +8,14 @@ use std::fmt::Debug;
 
 // A metric over which we can calculate statistics.
 pub trait ToStatMetric: Debug {
+    fn name(&self) -> String;
+
     fn as_f64(&self) -> f64;
 }
 
 #[derive(Debug)]
 pub struct Stats {
+    name: String,
     #[allow(dead_code)]
     raw_metrics: Vec<Box<dyn ToStatMetric>>,
     stat_data: Data<Vec<f64>>,
@@ -20,19 +23,25 @@ pub struct Stats {
 
 impl Stats {
     pub fn new(raw_metrics: Vec<Box<dyn ToStatMetric>>) -> Self {
+        let name = raw_metrics
+            .first()
+            .expect("should have atleast 1 metric datapoint")
+            .name();
+
         let data = {
             let data_f64: Vec<_> = raw_metrics.iter().map(|metric| metric.as_f64()).collect();
             statrs::statistics::Data::new(data_f64)
         };
 
         Stats {
+            name,
             raw_metrics,
             stat_data: data,
         }
     }
 
     pub fn aggregate(&mut self) -> AggregateStats {
-        AggregateStats::new(&mut self.stat_data)
+        AggregateStats::new(self.name.clone(), &mut self.stat_data)
     }
 
     pub(crate) fn plot_cdf(&self, dir: &str, plan: &ExecutionPlan) -> String {
@@ -95,6 +104,7 @@ impl Stats {
 #[allow(dead_code)]
 #[derive(Debug)]
 pub struct AggregateStats {
+    name: String,
     median: f64,
     mean: Option<f64>,
     p0: f64,
@@ -108,13 +118,14 @@ pub struct AggregateStats {
 }
 
 impl AggregateStats {
-    fn new(data: &mut Data<Vec<f64>>) -> Self {
+    fn new(name: String, data: &mut Data<Vec<f64>>) -> Self {
         let p25 = data.percentile(25);
         let p50 = data.percentile(50);
         let p75 = data.percentile(75);
         let trimean = (p25 + (2.0 * p50) + p75) / 4.0;
 
         AggregateStats {
+            name,
             median: data.median(),
             mean: data.mean(),
             p0: data.percentile(0),
