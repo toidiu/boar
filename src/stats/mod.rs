@@ -4,15 +4,14 @@ use plotly::{
     layout::{GridPattern, Layout, LayoutGrid},
 };
 use statrs::statistics::{Data, Distribution, OrderStatistics};
-use std::fmt::Debug;
+use std::{any::type_name, fmt::Debug};
 
 pub mod delivery_rate;
 pub mod download_duration;
+pub mod startup_exit;
 
 // A metric over which we can calculate statistics.
 pub trait ToStatMetric: Debug {
-    fn name(&self) -> String;
-
     fn as_f64(&self) -> f64;
 }
 
@@ -25,11 +24,12 @@ pub struct Stats {
 }
 
 impl Stats {
-    pub fn new(raw_metrics: Vec<Box<dyn ToStatMetric>>) -> Self {
-        let name = raw_metrics
-            .first()
-            .expect("should have atleast 1 metric datapoint")
-            .name();
+    pub fn new<T>(raw_metrics: Vec<Box<dyn ToStatMetric>>) -> Self {
+        let name = type_name::<T>()
+            .split("::")
+            .last()
+            .expect("Expect type")
+            .to_string();
 
         let data = {
             let data_f64: Vec<_> = raw_metrics.iter().map(|metric| metric.as_f64()).collect();
