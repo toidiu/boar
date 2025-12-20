@@ -1,7 +1,10 @@
 use byte_unit::Byte;
 use std::{
     fmt::Debug,
+    io::{BufRead, BufReader},
     process::{Child, Command, Stdio},
+    sync::{Arc, Mutex},
+    thread,
 };
 
 #[derive(Debug, Clone)]
@@ -15,11 +18,11 @@ pub struct EndpointSetup {
 }
 
 impl EndpointSetup {
-    pub fn run_server(&self) -> Child {
+    pub fn run_server(&self) -> (Child, Arc<Mutex<Vec<String>>>) {
         let server = &self.server_binary;
         let server = format!(
-            "{:?} --address 0.0.0.0:{}  --cc-algorithm {}",
-            server, self.server_port, self.server_cca
+            "{} {:?} --address 0.0.0.0:{}  --cc-algorithm {}",
+            self.client_logging, server, self.server_port, self.server_cca
         );
 
         cfg_if::cfg_if! {
@@ -34,12 +37,30 @@ impl EndpointSetup {
             }
         }
 
-        cmd.arg(server).stdout(Stdio::piped());
+        cmd.arg(&server).stdout(Stdio::piped());
+        cmd.arg(&server).stderr(Stdio::piped());
         // dbg!("{:?}", &cmd);
 
         // cmd.status().unwrap();
-        let server = cmd.spawn().unwrap();
-        server
+        let mut server = cmd.spawn().unwrap();
+
+        let stdout = server.stderr.take().unwrap();
+        let server_logs = Arc::new(Mutex::new(Vec::with_capacity(100)));
+        let server_logs_clone = server_logs.clone();
+        let _log = thread::spawn(move || {
+            // let server_logs = server_logs.clone();
+            // thread::sleep(Duration::from_millis(1));
+            let reader = BufReader::new(stdout);
+            reader
+                .lines()
+                .filter_map(|line| line.ok())
+                .for_each(|line| {
+                    let mut server_logs = server_logs_clone.lock().unwrap();
+                    server_logs.push(line);
+                });
+        });
+
+        (server, server_logs)
     }
 
     pub fn run_client(&self, download_bytes: &Byte) -> String {

@@ -10,7 +10,7 @@ struct Args {
     #[arg(short, default_value = "1mb")]
     download_size: String,
 
-    #[arg(short, default_value_t = 5)]
+    #[arg(short, default_value_t = 2)]
     run_count: u16,
 
     /// Congestion Control algorithm

@@ -11,6 +11,7 @@ impl DeliveryRate {
     // TODO: use named groups to match and parse more efficiently with just Regex:
     // https://stackoverflow.com/a/628563
     pub fn new_from_logs(logs: &str) -> Self {
+        // println!("{}", logs);
         // Regex to get "delivery_rate=1997003"
         let re = Regex::new(r"delivery_rate=[0-9]*").unwrap();
         let logs = re.captures(logs).unwrap().get(0).unwrap().as_str();
@@ -25,10 +26,6 @@ impl DeliveryRate {
 }
 
 impl ToStatMetric for DeliveryRate {
-    fn name(&self) -> String {
-        "DeliveryRate".to_string()
-    }
-
     fn as_f64(&self) -> f64 {
         self.rate as f64
     }

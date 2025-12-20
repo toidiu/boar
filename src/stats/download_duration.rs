@@ -48,10 +48,6 @@ impl DownloadDuration {
 }
 
 impl ToStatMetric for DownloadDuration {
-    fn name(&self) -> String {
-        "DownloadDuration".to_string()
-    }
-
     fn as_f64(&self) -> f64 {
         self.duration.as_secs_f64()
     }
