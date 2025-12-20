@@ -15,7 +15,7 @@ env:
 
 
 jobs:
-  rustfmt:
+  lint:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -25,12 +25,17 @@ jobs:
       - name: Install rust toolchain
         id: toolchain
         run: |
-          rustup toolchain install nightly --profile minimal --component rustfmt
+          rustup toolchain install nightly --profile minimal --component rustfmt --component clippy
           rustup override set nightly
 
       - name: Run cargo fmt
         run: |
           cargo fmt --all -- --check
+
+      - name: Run cargo clippy
+        run: |
+          cargo clippy --all-features --all-targets --no-deps -- -D warnings
+
 
   test:
     runs-on: ubuntu-latest
