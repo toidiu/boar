@@ -21,8 +21,8 @@ mod stats;
 #[derive(Debug, Clone)]
 struct ExecutionPlan {
     uuid: Uuid,
-    network: NetworkSetup,
-    endpoint: EndpointSetup,
+    network_setup: NetworkSetup,
+    endpoint_setup: EndpointSetup,
     download_bytes: Byte,
     run_count: u16,
 }
@@ -35,16 +35,16 @@ fn main() -> Result<()> {
     // println!("Executing: {:#?}", &plan);
 
     // Network
-    plan.network.cleanup()?;
-    plan.network.create()?;
+    plan.network_setup.cleanup()?;
+    plan.network_setup.create()?;
 
     // Run
-    let (mut server, server_logs) = plan.endpoint.run_server();
+    let (mut server, server_logs) = plan.endpoint_setup.run_server();
 
     let mut download_duration = Vec::new();
     let mut delivery_rate = Vec::new();
     for i in 1..=plan.run_count {
-        let client_logs = plan.endpoint.run_client(&plan.download_bytes);
+        let client_logs = plan.endpoint_setup.run_client(&plan.download_bytes);
         let metric_download_duration = DownloadDuration::new_from_logs(&client_logs);
         println!(
             "Run [{}/{}]: Download duration: {:?}",

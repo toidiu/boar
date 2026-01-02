@@ -4,21 +4,23 @@ use std::{
     process::{Command, Stdio},
 };
 
-#[allow(dead_code)]
 #[derive(Debug, Clone)]
-pub struct NetworkSetup {
+pub(crate) struct NetworkSetup {
     cmd: String,
+    #[allow(dead_code)]
     delay_ms: u64,
+    #[allow(dead_code)]
     loss_pct: u64,
+    #[allow(dead_code)]
     rate_mbit: u64,
 }
 
 impl NetworkSetup {
-    pub fn new(cmd: String) -> Self {
+    pub fn new(cmd: String, delay_ms: u64) -> Self {
         NetworkSetup {
             cmd,
             // Default values in script
-            delay_ms: 50,
+            delay_ms,
             // Default values in script
             loss_pct: 0,
             // Default values in script

@@ -13,29 +13,38 @@ struct Args {
     #[arg(short, default_value_t = 2)]
     run_count: u16,
 
+    // --------
+    // Server
+    // --------
     /// Congestion Control algorithm
-    #[arg(long,  default_value_t = default_cc_algorithm())]
+    #[arg(long,  default_value_t = default::default_cc_algorithm())]
     pub cc_algorithm: String,
-}
 
-fn default_cc_algorithm() -> String {
-    "bbr2_gcongestion".to_string()
+    // --------
+    // Network
+    // --------
+    #[arg(long,  default_value_t = default::default_delay_ms())]
+    pub delay_ms: u64,
 }
 
 pub(crate) fn parse() -> ExecutionPlan {
     let args = Args::parse();
 
-    cfg_if::cfg_if! {
-        if #[cfg(target_os = "linux")] {
-            let network_setup = "./scripts/virt_config_tc.sh".to_string();
-            let server_ip="10.55.10.1".to_string();
-        } else {
-            let network_setup = "./scripts/test.sh".to_string();
-            let server_ip = "127.0.0.1".to_string();
+    let (network_setup, server_ip) = {
+        cfg_if::cfg_if! {
+            if #[cfg(target_os = "linux")] {
+                let net_sim_cmd = "./scripts/virt_config_tc.sh".to_string();
+                let server_ip="10.55.10.1".to_string();
+            } else {
+                let net_sim_cmd = "./scripts/test.sh".to_string();
+                let server_ip = "127.0.0.1".to_string();
+            }
         }
-    }
 
-    let run_setup = EndpointSetup {
+        (NetworkSetup::new(net_sim_cmd, args.delay_ms), server_ip)
+    };
+
+    let endpoint_setup = EndpointSetup {
         // Client
         // cargo build --bin quiche-client
         client_binary: "deps/quiche/target/debug/quiche-client".to_string(),
@@ -53,10 +62,20 @@ pub(crate) fn parse() -> ExecutionPlan {
 
     ExecutionPlan {
         uuid: Uuid::new_v4(),
-        network: NetworkSetup::new(network_setup),
-        endpoint: run_setup,
+        network_setup,
+        endpoint_setup,
 
         download_bytes,
         run_count: args.run_count,
+    }
+}
+
+mod default {
+    pub fn default_cc_algorithm() -> String {
+        "bbr2_gcongestion".to_string()
+    }
+
+    pub fn default_delay_ms() -> u64 {
+        50
     }
 }
