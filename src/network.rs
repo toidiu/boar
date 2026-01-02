@@ -46,17 +46,21 @@ impl NetworkSetup {
     }
 
     pub fn create(&self) -> Result<()> {
-        let res = Command::new("sh")
-            .arg("-c")
+        let mut cmd = Command::new("sh");
+        let cmd = cmd
+            // .arg("-c")
             .arg(&self.cmd)
-            .stdout(Stdio::piped())
-            .output()
-            .unwrap();
+            // .arg("--")
+            .arg("--delay")
+            .arg(self.delay_ms.to_string())
+            .stdout(Stdio::piped());
+        let res = cmd.output().unwrap();
 
-        // dbg!(
-        //     "Setup network cmd: {:?}",
-        //     str::from_utf8(&res.stdout).unwrap()
-        // );
+        dbg!(
+            "Setup network cmd: {:?} {:?}",
+            cmd,
+            str::from_utf8(&res.stdout).unwrap()
+        );
 
         if res.status.success() {
             Ok(())

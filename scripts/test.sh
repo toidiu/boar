@@ -1,1 +1,1 @@
-echo "test script"
+echo "test script with args: $@"
