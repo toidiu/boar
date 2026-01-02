@@ -3,6 +3,19 @@ set -e
 
 source scripts/virt_common.sh
 
+#######################
+# ARGS
+############
+LATENCY="${1:-50ms}"
+RATE="${2:-20mbit}"
+LOSSMODEL="${3:-random 0%}"
+
+# DEBUG
+# echo "virt_config_tc. latency: $LATENCY rate: $RATE. all args: $@"
+############
+# ARGS END
+#######################
+
 # Source: Setup adapted from https://wiki.cfdata.org/pages/viewpage.action?pageId=1187491234
 #
 # Development
@@ -233,8 +246,8 @@ tc -n $NS_S1 qdisc add dev $VETH_S1_M1 root fq
 # tc -n $NS_M2 qdisc add dev $VETH_M2_M1 root fq
 # tc -n $NS_M2 qdisc add dev $VETH_M2_C1 root fq
 # tc -n $NS_C1 qdisc add dev $VETH_C1_M2 root fq
-./scripts/virt_tc_netem.sh
-./scripts/virt_tc_htb.sh
+./scripts/virt_tc_netem.sh $LATENCY "$LOSSMODEL"
+./scripts/virt_tc_htb.sh $RATE
 
 echo "[-] Configure ipv4"
 for NS in $NS_S1 $NS_M1 $NS_M2 $NS_M3 $NS_C1 $NS_C2 ; do
