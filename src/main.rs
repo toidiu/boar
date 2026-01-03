@@ -50,7 +50,7 @@ fn main() -> Result<()> {
 
         println!(
             "Run [{}/{}]: Download duration: {:?}. DeliveryRate {:?}",
-            i, plan.run_count, metric_download_duration, delivery_rate
+            i, plan.run_count, metric_download_duration, metric_delivery_rate
         );
 
         download_duration.push(Box::new(metric_download_duration));
