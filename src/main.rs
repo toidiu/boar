@@ -32,7 +32,7 @@ fn main() -> Result<()> {
     let plan = args::parse();
     // dbg!(&setup, &plan);
 
-    // println!("Executing: {:#?}", &plan);
+    println!("Executing: {:#?}\n-------------", &plan);
 
     // Network
     plan.network.cleanup()?;
@@ -46,12 +46,15 @@ fn main() -> Result<()> {
     for i in 1..=plan.run_count {
         let client_logs = plan.endpoint.run_client(&plan.download_bytes);
         let metric_download_duration = DownloadDuration::new_from_logs(&client_logs);
+        let metric_delivery_rate = DeliveryRate::new_from_logs(&client_logs);
+
         println!(
-            "Run [{}/{}]: Download duration: {:?}",
-            i, plan.run_count, metric_download_duration
+            "Run [{}/{}]: Download duration: {:?}. DeliveryRate {:?}",
+            i, plan.run_count, metric_download_duration, delivery_rate
         );
+
         download_duration.push(Box::new(metric_download_duration));
-        delivery_rate.push(Box::new(DeliveryRate::new_from_logs(&client_logs)));
+        delivery_rate.push(Box::new(metric_delivery_rate));
     }
 
     let server_logs = server_logs.lock().unwrap().clone();
