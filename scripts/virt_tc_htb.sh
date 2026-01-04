@@ -3,7 +3,16 @@ set -e
 
 source scripts/virt_common.sh
 
-# Source: Setup adapted from https://wiki.cfdata.org/pages/viewpage.action?pageId=1187491234
+#######################
+# ARGS
+############
+RATE="${1:-20mbit}"
+
+# DEBUG
+# echo "virt_config_tc. rate: $RATE. all args: $@"
+############
+# ARGS END
+#######################
 
 set_htb() {
   NSNAME=$1
@@ -29,9 +38,9 @@ set_htb() {
   fi
 }
 
-set_htb $NS_M1 $VETH_M1_M2 "20mbit" "pfifo limit 10800"
+set_htb $NS_M1 $VETH_M1_M2 $RATE "pfifo limit 10800"
 # set_htb m-ns3 veth3t2 "20mbit" "pfifo limit 108" # do we want to set upload low
-set_htb $NS_M3 $VETH_M3_M2 "20mbit" "pfifo limit 10800"
+set_htb $NS_M3 $VETH_M3_M2 $RATE "pfifo limit 10800"
 
 # examples
 #QUEUE="fq_codel noecn"

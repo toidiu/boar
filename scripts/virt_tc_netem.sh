@@ -3,13 +3,21 @@ set -e
 
 source scripts/virt_common.sh
 
-# Source: Setup adapted from https://wiki.cfdata.org/pages/viewpage.action?pageId=1187491234
 
-# Avg Cloudflare latency is ~100ms
-LATENCY="50ms"
-LOSSMODEL="random 0%"
+#######################
+# ARGS
+############
+LATENCY="${1:-50ms}"
+LOSSMODEL="${2:-random 0%}"
 # set limit to "infinite"
 LIMIT="1000000"
+
+# DEBUG
+# echo "virt_config_tc. latency: $LATENCY. all args: $@"
+############
+# ARGS END
+#######################
+
 
 # ip netns exec m2_ns tc qdisc del dev veth_m2_m3 root
 # ip netns exec m2_ns tc qdisc del dev veth_m2_m1 root
