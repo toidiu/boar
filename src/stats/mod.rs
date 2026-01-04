@@ -1,3 +1,4 @@
+use crate::ExecutionPlan;
 use convert_case::ccase;
 use plotly::{
     Scatter,
@@ -51,7 +52,7 @@ impl Stats {
         AggregateStats::new(self.name.clone(), &mut self.stat_data)
     }
 
-    pub(crate) fn plot_cdf(&self, dir: &str) -> String {
+    pub(crate) fn plot_cdf(&self, plan: &ExecutionPlan, dir: &str) -> String {
         let cdf_data = self.cdf();
 
         let mut plot = plotly::Plot::new();
@@ -65,9 +66,16 @@ impl Stats {
             .y_axis("y");
         plot.add_trace(trace);
 
-        let title = format!("{}", "title");
         let layout = Layout::new()
-            .title(format!("{} Cumulative distribution function", title))
+            .title(format!(
+                "{} [{}] [delay: {}ms] [rate: {}mbit] [loss: {}] [dl_bytes: {}]",
+                self.name(),
+                plan.endpoint_setup.server_cca,
+                plan.network_setup.delay_ms,
+                plan.network_setup.rate_mbit,
+                plan.network_setup.loss_model,
+                plan.download_bytes
+            ))
             .show_legend(true)
             .height(1000)
             .grid(

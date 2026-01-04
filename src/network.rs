@@ -7,9 +7,9 @@ use std::{
 #[derive(Debug, Clone)]
 pub(crate) struct NetworkSetup {
     cmd: String,
-    delay_ms: u64,
-    rate_mbit: u64,
-    loss_model: String,
+    pub delay_ms: u64,
+    pub rate_mbit: u64,
+    pub loss_model: String,
 }
 
 impl NetworkSetup {
