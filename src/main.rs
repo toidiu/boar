@@ -53,7 +53,9 @@ fn main() -> Result<()> {
             i, plan.count, metric_download_duration, metric_delivery_rate
         );
 
-        download_duration.push(Box::new(metric_download_duration));
+        if let Ok(metric_download_duration) = metric_download_duration {
+            download_duration.push(Box::new(metric_download_duration));
+        }
         delivery_rate.push(Box::new(metric_delivery_rate));
     }
 

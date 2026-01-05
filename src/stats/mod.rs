@@ -9,6 +9,7 @@ use std::{any::type_name, fmt::Debug};
 
 pub mod delivery_rate;
 pub mod download_duration;
+pub mod error;
 pub mod startup_exit;
 
 // A metric over which we can calculate statistics.
