@@ -1,0 +1,405 @@
+Stats {
+    name: "StartupExit",
+    raw_metrics: [
+        StartupExit {
+            bandwidth: 16488724,
+        },
+        StartupExit {
+            bandwidth: 29387402,
+        },
+        StartupExit {
+            bandwidth: 29110271,
+        },
+        StartupExit {
+            bandwidth: 28048764,
+        },
+        StartupExit {
+            bandwidth: 2364772,
+        },
+        StartupExit {
+            bandwidth: 25231233,
+        },
+        StartupExit {
+            bandwidth: 2673477,
+        },
+        StartupExit {
+            bandwidth: 19685375,
+        },
+        StartupExit {
+            bandwidth: 3532386,
+        },
+        StartupExit {
+            bandwidth: 20758671,
+        },
+        StartupExit {
+            bandwidth: 3278073,
+        },
+        StartupExit {
+            bandwidth: 27981638,
+        },
+        StartupExit {
+            bandwidth: 65789219,
+        },
+        StartupExit {
+            bandwidth: 2519412,
+        },
+        StartupExit {
+            bandwidth: 27561131,
+        },
+        StartupExit {
+            bandwidth: 11903019,
+        },
+        StartupExit {
+            bandwidth: 24947290,
+        },
+        StartupExit {
+            bandwidth: 26325438,
+        },
+        StartupExit {
+            bandwidth: 26262570,
+        },
+        StartupExit {
+            bandwidth: 25883260,
+        },
+        StartupExit {
+            bandwidth: 22795609,
+        },
+        StartupExit {
+            bandwidth: 27575807,
+        },
+        StartupExit {
+            bandwidth: 24907137,
+        },
+        StartupExit {
+            bandwidth: 24874040,
+        },
+        StartupExit {
+            bandwidth: 2745807,
+        },
+        StartupExit {
+            bandwidth: 28805706,
+        },
+        StartupExit {
+            bandwidth: 2090904,
+        },
+        StartupExit {
+            bandwidth: 10420839,
+        },
+        StartupExit {
+            bandwidth: 28307152,
+        },
+        StartupExit {
+            bandwidth: 2506279,
+        },
+        StartupExit {
+            bandwidth: 21854906,
+        },
+        StartupExit {
+            bandwidth: 2809634,
+        },
+        StartupExit {
+            bandwidth: 23950972,
+        },
+        StartupExit {
+            bandwidth: 26058046,
+        },
+        StartupExit {
+            bandwidth: 28276163,
+        },
+        StartupExit {
+            bandwidth: 68761561,
+        },
+        StartupExit {
+            bandwidth: 23586256,
+        },
+        StartupExit {
+            bandwidth: 2630255,
+        },
+        StartupExit {
+            bandwidth: 2511702,
+        },
+        StartupExit {
+            bandwidth: 24227345,
+        },
+        StartupExit {
+            bandwidth: 18426432,
+        },
+        StartupExit {
+            bandwidth: 23253724,
+        },
+        StartupExit {
+            bandwidth: 73925063,
+        },
+        StartupExit {
+            bandwidth: 59463983,
+        },
+        StartupExit {
+            bandwidth: 2626464,
+        },
+        StartupExit {
+            bandwidth: 10088305,
+        },
+        StartupExit {
+            bandwidth: 2691051,
+        },
+        StartupExit {
+            bandwidth: 30335578,
+        },
+        StartupExit {
+            bandwidth: 71476105,
+        },
+        StartupExit {
+            bandwidth: 80276253,
+        },
+        StartupExit {
+            bandwidth: 67039373,
+        },
+        StartupExit {
+            bandwidth: 75483040,
+        },
+        StartupExit {
+            bandwidth: 57494942,
+        },
+        StartupExit {
+            bandwidth: 71881781,
+        },
+        StartupExit {
+            bandwidth: 13345258,
+        },
+        StartupExit {
+            bandwidth: 49949667,
+        },
+        StartupExit {
+            bandwidth: 18724968,
+        },
+        StartupExit {
+            bandwidth: 73257352,
+        },
+        StartupExit {
+            bandwidth: 66977657,
+        },
+        StartupExit {
+            bandwidth: 36122334,
+        },
+        StartupExit {
+            bandwidth: 26978956,
+        },
+        StartupExit {
+            bandwidth: 71825067,
+        },
+        StartupExit {
+            bandwidth: 27021905,
+        },
+        StartupExit {
+            bandwidth: 2067047,
+        },
+        StartupExit {
+            bandwidth: 25744992,
+        },
+        StartupExit {
+            bandwidth: 20814298,
+        },
+        StartupExit {
+            bandwidth: 11148066,
+        },
+        StartupExit {
+            bandwidth: 3141298,
+        },
+        StartupExit {
+            bandwidth: 2794539,
+        },
+        StartupExit {
+            bandwidth: 3876941,
+        },
+        StartupExit {
+            bandwidth: 31663064,
+        },
+        StartupExit {
+            bandwidth: 43149489,
+        },
+        StartupExit {
+            bandwidth: 2207932,
+        },
+        StartupExit {
+            bandwidth: 24573868,
+        },
+        StartupExit {
+            bandwidth: 18678512,
+        },
+        StartupExit {
+            bandwidth: 23177091,
+        },
+        StartupExit {
+            bandwidth: 22453774,
+        },
+        StartupExit {
+            bandwidth: 26212978,
+        },
+        StartupExit {
+            bandwidth: 3090974,
+        },
+        StartupExit {
+            bandwidth: 26160600,
+        },
+        StartupExit {
+            bandwidth: 1927553,
+        },
+        StartupExit {
+            bandwidth: 27130433,
+        },
+        StartupExit {
+            bandwidth: 2722404,
+        },
+        StartupExit {
+            bandwidth: 4633704,
+        },
+        StartupExit {
+            bandwidth: 2233220,
+        },
+        StartupExit {
+            bandwidth: 30190328,
+        },
+        StartupExit {
+            bandwidth: 21736732,
+        },
+        StartupExit {
+            bandwidth: 21664473,
+        },
+        StartupExit {
+            bandwidth: 18956347,
+        },
+        StartupExit {
+            bandwidth: 30895268,
+        },
+        StartupExit {
+            bandwidth: 23075236,
+        },
+        StartupExit {
+            bandwidth: 11546781,
+        },
+        StartupExit {
+            bandwidth: 36976625,
+        },
+        StartupExit {
+            bandwidth: 2450694,
+        },
+        StartupExit {
+            bandwidth: 26511713,
+        },
+        StartupExit {
+            bandwidth: 19538958,
+        },
+        StartupExit {
+            bandwidth: 2307379,
+        },
+        StartupExit {
+            bandwidth: 2342087,
+        },
+        StartupExit {
+            bandwidth: 22756078,
+        },
+    ],
+    stat_data: Data(
+        [
+            16488724.0,
+            29387402.0,
+            29110271.0,
+            28048764.0,
+            2364772.0,
+            25231233.0,
+            2673477.0,
+            19685375.0,
+            3532386.0,
+            20758671.0,
+            3278073.0,
+            27981638.0,
+            65789219.0,
+            2519412.0,
+            27561131.0,
+            11903019.0,
+            24947290.0,
+            26325438.0,
+            26262570.0,
+            25883260.0,
+            22795609.0,
+            27575807.0,
+            24907137.0,
+            24874040.0,
+            2745807.0,
+            28805706.0,
+            2090904.0,
+            10420839.0,
+            28307152.0,
+            2506279.0,
+            21854906.0,
+            2809634.0,
+            23950972.0,
+            26058046.0,
+            28276163.0,
+            68761561.0,
+            23586256.0,
+            2630255.0,
+            2511702.0,
+            24227345.0,
+            18426432.0,
+            23253724.0,
+            73925063.0,
+            59463983.0,
+            2626464.0,
+            10088305.0,
+            2691051.0,
+            30335578.0,
+            71476105.0,
+            80276253.0,
+            67039373.0,
+            75483040.0,
+            57494942.0,
+            71881781.0,
+            13345258.0,
+            49949667.0,
+            18724968.0,
+            73257352.0,
+            66977657.0,
+            36122334.0,
+            26978956.0,
+            71825067.0,
+            27021905.0,
+            2067047.0,
+            25744992.0,
+            20814298.0,
+            11148066.0,
+            3141298.0,
+            2794539.0,
+            3876941.0,
+            31663064.0,
+            43149489.0,
+            2207932.0,
+            24573868.0,
+            18678512.0,
+            23177091.0,
+            22453774.0,
+            26212978.0,
+            3090974.0,
+            26160600.0,
+            1927553.0,
+            27130433.0,
+            2722404.0,
+            4633704.0,
+            2233220.0,
+            30190328.0,
+            21736732.0,
+            21664473.0,
+            18956347.0,
+            30895268.0,
+            23075236.0,
+            11546781.0,
+            36976625.0,
+            2450694.0,
+            26511713.0,
+            19538958.0,
+            2307379.0,
+            2342087.0,
+            22756078.0,
+        ],
+    ),
+}
