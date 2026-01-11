@@ -1,0 +1,88 @@
+Report {
+    plan: ExecutionPlan {
+        uuid: 385eb68a-aba4-43ca-8cb1-faae7b7d5726,
+        network_setup: NetworkSetup {
+            cmd: "./scripts/virt_config_tc.sh",
+            delay_ms: 25,
+            rate_mbit: 50,
+            loss_model: "random 0%",
+        },
+        endpoint_setup: EndpointSetup {
+            client_binary: "deps/quiche/target/debug/quiche-client",
+            client_logging: "RUST_LOG=info",
+            server_binary: "deps/quiche/target/debug/examples/async_http3_server",
+            server_ip: "10.55.10.1",
+            server_port: "9999",
+            server_cca: "bbr2_gcongestion",
+        },
+        download_bytes: Byte(
+            50000000,
+        ),
+        count: 100,
+    },
+    stat_report: [
+        StatsReport {
+            aggregate: AggregateStats {
+                name: "DownloadDuration",
+                median: 9.2585,
+                mean: Some(
+                    9.264669999999999,
+                ),
+                std_dev: Some(
+                    0.029651189357308868,
+                ),
+                p0: 9.226,
+                p25: 9.247416666666666,
+                p50: 9.2585,
+                p75: 9.274000000000001,
+                p90: 9.284633333333334,
+                p99: 9.409513333333333,
+                p100: 9.425,
+                trimean: 9.259604166666666,
+            },
+            cdf_path: "report/385eb68a-aba4-43ca-8cb1-faae7b7d5726/cdf_download_duration.html",
+        },
+        StatsReport {
+            aggregate: AggregateStats {
+                name: "DeliveryRate",
+                median: 22616.0,
+                mean: Some(
+                    22925.16999999999,
+                ),
+                std_dev: Some(
+                    1008.2049260087371,
+                ),
+                p0: 21263.0,
+                p25: 22192.916666666668,
+                p50: 22616.0,
+                p75: 23536.416666666668,
+                p90: 24278.033333333333,
+                p99: 26192.549999999996,
+                p100: 26440.0,
+                trimean: 22740.333333333336,
+            },
+            cdf_path: "report/385eb68a-aba4-43ca-8cb1-faae7b7d5726/cdf_delivery_rate.html",
+        },
+        StatsReport {
+            aggregate: AggregateStats {
+                name: "StartupExit",
+                median: 24739152.5,
+                mean: Some(
+                    24699486.94000001,
+                ),
+                std_dev: Some(
+                    7540800.306907163,
+                ),
+                p0: 9468557.0,
+                p25: 20382127.666666668,
+                p50: 24739152.5,
+                p75: 27481848.833333332,
+                p90: 32731173.16666665,
+                p99: 55345594.419999994,
+                p100: 55642896.0,
+                trimean: 24335570.375,
+            },
+            cdf_path: "report/385eb68a-aba4-43ca-8cb1-faae7b7d5726/cdf_startup_exit.html",
+        },
+    ],
+}
