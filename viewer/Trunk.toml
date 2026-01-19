@@ -8,4 +8,5 @@ command = "sh"
 command_arguments = ["-c", "npx tailwindcss -i input.css -o tailwind.css --minify"]
 
 [watch]
-ignore = ["tailwind.css"]
+watch = [".", "../src"]
+ignore = ["tailwind.css", "dist", "node_modules"]
