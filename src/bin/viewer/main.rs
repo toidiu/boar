@@ -1,3 +1,4 @@
+use humansize::{DECIMAL, format_size};
 use leptos::prelude::*;
 use std::collections::HashMap;
 
@@ -351,7 +352,7 @@ fn FilePicker(set_reports: WriteSignal<Vec<ReportWithCdf>>) -> impl IntoView {
                     }
                 }
 
-                // Accumulate reports, deduplicating by UUID
+                // Accumulate reports, deduplicating by UUID, then sort by delay ascending
                 if !loaded_reports.is_empty() {
                     set_reports.update(|existing| {
                         for report_with_cdf in loaded_reports {
@@ -363,6 +364,8 @@ fn FilePicker(set_reports: WriteSignal<Vec<ReportWithCdf>>) -> impl IntoView {
                                 existing.push(report_with_cdf);
                             }
                         }
+                        // Sort by delay_ms in ascending order
+                        existing.sort_by_key(|r| r.report.plan.network_setup.delay_ms);
                     });
                 }
             });
@@ -533,13 +536,7 @@ fn ReportTable(
                             <table class="min-w-full border-collapse">
                                 <thead>
                                     <tr class="bg-gray-100 border-b-2 border-gray-300">
-                                        <th rowspan=2 class="px-3 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider border-r border-gray-200 bg-gray-100">
-                                            ""
-                                        </th>
-                                        <th rowspan=2 class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider border-r border-gray-200 bg-gray-100">
-                                            "UUID"
-                                        </th>
-                                        <th rowspan=2 class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider border-r border-gray-200 bg-gray-100">
+                                        <th rowspan=2 class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider border-r-2 border-gray-400 bg-gray-100 min-w-56 sticky left-0 z-20 shadow-[4px_0_8px_-2px_rgba(0,0,0,0.15)]">
                                             "Setup"
                                         </th>
                                         {stat_group_headers}
@@ -745,27 +742,30 @@ fn ReportRow(
             on:dragleave=on_drag_leave
             on:drop=on_drop
         >
-            <td class="px-2 py-3 whitespace-nowrap bg-white border-r border-gray-200">
-                <div class="flex items-center gap-2">
-                    <span class="text-gray-400 hover:text-gray-600 cursor-grab text-base select-none" title="Drag to reorder">"⠿"</span>
-                    <button
-                        on:click=on_remove
-                        class="w-5 h-5 flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 rounded text-sm"
-                        title="Remove report"
-                    >
-                        "×"
-                    </button>
-                </div>
-            </td>
-            <td class="px-4 py-3 whitespace-nowrap text-xs text-gray-500 font-mono bg-white border-r border-gray-200">
-                <UuidCell uuid=uuid />
-            </td>
-            <td class="px-4 py-2 text-sm text-gray-800 bg-white border-r border-gray-200">
-                <div class="flex flex-col gap-0.5">
-                    <div><span class="text-gray-500">"Delay: "</span><span class="font-medium">{format!("{}ms", plan.network_setup.delay_ms)}</span></div>
-                    <div><span class="text-gray-500">"Rate: "</span><span class="font-medium">{format!("{}mbit", plan.network_setup.rate_mbit)}</span></div>
-                    <div><span class="text-gray-500">"Loss: "</span><span>{plan.network_setup.loss_model.clone()}</span></div>
-                    <div><span class="text-gray-500">"CCA: "</span><span class="font-medium">{plan.endpoint_setup.server_cca.clone()}</span></div>
+            <td class="px-3 py-2 text-sm text-gray-800 bg-white border-r-2 border-gray-400 min-w-56 sticky left-0 z-10 shadow-[4px_0_8px_-2px_rgba(0,0,0,0.15)]">
+                <div class="flex items-start gap-2">
+                    <div class="flex flex-col items-center gap-1">
+                        <button
+                            on:click=on_remove
+                            class="w-5 h-5 flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 rounded text-sm"
+                            title="Remove report"
+                        >
+                            "×"
+                        </button>
+                        <span class="text-gray-400 hover:text-gray-600 cursor-grab select-none" style="font-size: 24px; line-height: 1;" title="Drag to reorder">"⠿"</span>
+                    </div>
+                    <div class="flex flex-col gap-1">
+                        <UuidCell uuid=uuid />
+                        <div><span class="text-gray-500">"Size: "</span><span class="font-medium">{format_size(plan.download_bytes.as_u64(), DECIMAL)}</span></div>
+                        <div class="whitespace-nowrap"><span class="text-gray-500">"CCA: "</span><span class="font-medium">{plan.endpoint_setup.server_cca.clone()}</span></div>
+                        <div class="mt-1 px-2 py-1.5 bg-gray-100 rounded border border-gray-200">
+                            <div class="flex flex-col gap-0.5 text-xs">
+                                <div><span class="text-gray-500">"Delay: "</span><span class="font-medium">{format!("{}ms", plan.network_setup.delay_ms)}</span></div>
+                                <div><span class="text-gray-500">"Rate: "</span><span class="font-medium">{format!("{}mbit", plan.network_setup.rate_mbit)}</span></div>
+                                <div><span class="text-gray-500">"Loss: "</span><span>{plan.network_setup.loss_model.clone()}</span></div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </td>
             {stat_cells}
@@ -939,12 +939,14 @@ fn UuidCell(uuid: uuid::Uuid) -> impl IntoView {
 
     view! {
         <div
-            class="px-2 py-1 rounded cursor-pointer hover:brightness-95 transition-all flex items-center gap-1"
-            style=style
+            class="flex items-center gap-1 cursor-pointer"
             title=full_uuid_for_title
             on:click=on_click
         >
-            <span class="text-gray-700 font-mono text-xs">
+            <span
+                class="px-1.5 py-0.5 rounded font-mono text-xs text-gray-700 hover:brightness-95 transition-all"
+                style=style
+            >
                 {move || if copied.get() { "Copied!".to_string() } else { short_uuid.clone() }}
             </span>
             {move || if !copied.get() {
