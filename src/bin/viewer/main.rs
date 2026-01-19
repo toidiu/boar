@@ -10,11 +10,32 @@ fn App() -> impl IntoView {
     // Store loaded reports
     let (reports, set_reports) = signal(Vec::<boar::Report>::new());
 
+    let has_reports = move || !reports.read().is_empty();
+
+    let on_clear_all = move |_| {
+        set_reports.set(Vec::new());
+    };
+
     view! {
         <div class="min-h-screen bg-gray-100 p-8">
             <h1 class="text-3xl font-bold text-gray-800 mb-8">"Boar Report Viewer"</h1>
-            <FilePicker set_reports=set_reports />
-            <ReportList reports=reports />
+            <div class="mb-8 flex items-center gap-4">
+                <FilePicker set_reports=set_reports />
+                <button
+                    on:click=on_clear_all
+                    disabled=move || !has_reports()
+                    class=move || {
+                        if has_reports() {
+                            "px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+                        } else {
+                            "px-4 py-2 bg-gray-300 text-gray-500 rounded cursor-not-allowed"
+                        }
+                    }
+                >
+                    "Clear All"
+                </button>
+            </div>
+            <ReportList reports=reports set_reports=set_reports />
         </div>
     }
 }
@@ -52,18 +73,25 @@ fn FilePicker(set_reports: WriteSignal<Vec<boar::Report>>) -> impl IntoView {
                     }
                 }
 
-                // Only update if we found at least one report
+                // Accumulate reports, deduplicating by UUID
                 if !loaded_reports.is_empty() {
-                    set_reports.set(loaded_reports);
+                    set_reports.update(|existing| {
+                        for report in loaded_reports {
+                            // Only add if UUID not already present
+                            if !existing.iter().any(|r| r.plan.uuid == report.plan.uuid) {
+                                existing.push(report);
+                            }
+                        }
+                    });
                 }
             });
         }
     };
 
     view! {
-        <div class="mb-8">
+        <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">
-                "Select report folder(s)"
+                "Select a folder containing report(s)"
             </label>
             <input
                 type="file"
@@ -83,7 +111,10 @@ fn FilePicker(set_reports: WriteSignal<Vec<boar::Report>>) -> impl IntoView {
 }
 
 #[component]
-fn ReportList(reports: ReadSignal<Vec<boar::Report>>) -> impl IntoView {
+fn ReportList(
+    reports: ReadSignal<Vec<boar::Report>>,
+    set_reports: WriteSignal<Vec<boar::Report>>,
+) -> impl IntoView {
     view! {
         <div>
             {move || {
@@ -99,7 +130,7 @@ fn ReportList(reports: ReadSignal<Vec<boar::Report>>) -> impl IntoView {
                         .iter()
                         .map(|report| {
                             let report = report.clone();
-                            view! { <ReportCard report=report /> }
+                            view! { <ReportCard report=report set_reports=set_reports /> }
                         })
                         .collect();
                     view! {
@@ -114,12 +145,27 @@ fn ReportList(reports: ReadSignal<Vec<boar::Report>>) -> impl IntoView {
 }
 
 #[component]
-fn ReportCard(report: boar::Report) -> impl IntoView {
+fn ReportCard(report: boar::Report, set_reports: WriteSignal<Vec<boar::Report>>) -> impl IntoView {
+    let uuid = report.plan.uuid;
     let plan = report.plan.clone();
     let stats = report.stat_report.clone();
 
+    let on_remove = move |_| {
+        set_reports.update(|reports| {
+            reports.retain(|r| r.plan.uuid != uuid);
+        });
+    };
+
     view! {
-        <div class="bg-white rounded-lg shadow p-6">
+        <div class="bg-white rounded-lg shadow p-6 relative">
+            <button
+                on:click=on_remove
+                class="absolute top-2 right-2 w-8 h-8 flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full text-xl"
+                title="Remove report"
+            >
+                "×"
+            </button>
+
             <div class="flex justify-between items-start mb-4">
                 <h2 class="text-lg font-semibold text-gray-800">
                     {format!("Report: {}", plan.uuid)}
