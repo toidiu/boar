@@ -289,6 +289,9 @@ fn FilePicker(set_reports: WriteSignal<Vec<ReportWithCdf>>) -> impl IntoView {
 
     let input_ref: NodeRef<Input> = NodeRef::new();
 
+    // Track the number of reports found
+    let (report_count, set_report_count) = signal(Option::<usize>::None);
+
     // Set webkitdirectory attribute after mount
     Effect::new(move |_| {
         if let Some(input) = input_ref.get() {
@@ -352,6 +355,10 @@ fn FilePicker(set_reports: WriteSignal<Vec<ReportWithCdf>>) -> impl IntoView {
                     }
                 }
 
+                // Update the report count
+                let count = loaded_reports.len();
+                set_report_count.set(Some(count));
+
                 // Accumulate reports, deduplicating by UUID, then sort by delay ascending
                 if !loaded_reports.is_empty() {
                     set_reports.update(|existing| {
@@ -372,24 +379,26 @@ fn FilePicker(set_reports: WriteSignal<Vec<ReportWithCdf>>) -> impl IntoView {
         }
     };
 
+    let count_text = move || match report_count.get() {
+        Some(0) => "No reports found".to_string(),
+        Some(1) => "1 report found".to_string(),
+        Some(n) => format!("{} reports found", n),
+        None => "No reports selected".to_string(),
+    };
+
     view! {
-        <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">
-                "Select a folder containing report(s)"
+        <div class="flex items-center gap-3">
+            <label class="py-2 px-4 rounded text-sm font-semibold bg-blue-50 text-blue-700 hover:bg-blue-100 cursor-pointer">
+                "Choose Reports"
+                <input
+                    type="file"
+                    multiple=true
+                    on:change=on_change
+                    class="hidden"
+                    node_ref=input_ref
+                />
             </label>
-            <input
-                type="file"
-                multiple=true
-                on:change=on_change
-                class="block w-full text-sm text-gray-500
-                       file:mr-4 file:py-2 file:px-4
-                       file:rounded file:border-0
-                       file:text-sm file:font-semibold
-                       file:bg-blue-50 file:text-blue-700
-                       hover:file:bg-blue-100
-                       cursor-pointer"
-                node_ref=input_ref
-            />
+            <span class="text-sm text-gray-600">{count_text}</span>
         </div>
     }
 }
