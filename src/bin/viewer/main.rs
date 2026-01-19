@@ -600,6 +600,35 @@ fn ReportRow(
         if let Some(dt) = ev.data_transfer() {
             let _ = dt.set_data("text/plain", &index.to_string());
             dt.set_effect_allowed("move");
+
+            // Use the entire row as the drag image, aligned to the drag icon
+            if let Some(target) = ev.target() {
+                use wasm_bindgen::JsCast;
+                if let Some(drag_el) = target.dyn_ref::<web_sys::HtmlElement>() {
+                    // Traverse up to find the <tr> element
+                    let mut current: web_sys::Element = drag_el.clone().into();
+                    while let Some(parent) = current.parent_element() {
+                        if parent.tag_name().to_lowercase() == "tr" {
+                            // Calculate offset: position of drag icon relative to row
+                            let row_rect = parent.get_bounding_client_rect();
+                            let icon_rect = drag_el.get_bounding_client_rect();
+                            let offset_x = (icon_rect.left() - row_rect.left()
+                                + icon_rect.width() / 2.0)
+                                as i32;
+                            let offset_y = (icon_rect.top() - row_rect.top()
+                                + icon_rect.height() / 2.0)
+                                as i32;
+
+                            // Set the row as the drag image with proper offset
+                            if let Some(html_el) = parent.dyn_ref::<web_sys::HtmlElement>() {
+                                dt.set_drag_image(html_el, offset_x, offset_y);
+                            }
+                            break;
+                        }
+                        current = parent;
+                    }
+                }
+            }
         }
     };
 
