@@ -8,7 +8,7 @@ use crate::{
     },
 };
 use byte_unit::Byte;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
 use uuid::Uuid;
 
@@ -19,8 +19,8 @@ mod network;
 mod report;
 mod stats;
 
-#[derive(Debug, Clone, Serialize)]
-struct ExecutionPlan {
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub(crate) struct ExecutionPlan {
     uuid: Uuid,
     network_setup: NetworkSetup,
     endpoint_setup: EndpointSetup,

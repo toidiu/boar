@@ -1,5 +1,5 @@
 use byte_unit::Byte;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::{
     fmt::Debug,
     io::{BufRead, BufReader},
@@ -8,7 +8,7 @@ use std::{
     thread,
 };
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct EndpointSetup {
     pub client_binary: String,
     pub client_logging: String,
