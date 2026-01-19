@@ -1,4 +1,4 @@
-use crate::{ExecutionPlan, Stats, stats::AggregateStats};
+use crate::{ExecutionPlan, stats::AggregateStats, stats::Stats};
 use serde::{Deserialize, Serialize};
 use std::{
     fs::{File, create_dir_all},
@@ -7,14 +7,14 @@ use std::{
 
 #[allow(dead_code)]
 #[derive(Debug, Deserialize, Serialize)]
-pub(crate) struct Report {
+pub struct Report {
     pub plan: ExecutionPlan,
-    stat_report: Vec<StatsReport>,
+    pub stat_report: Vec<StatsReport>,
 }
 
 #[allow(dead_code)]
 #[derive(Debug, Default, Deserialize, Serialize)]
-pub(crate) struct StatsReport {
+pub struct StatsReport {
     pub aggregate: AggregateStats,
     pub cdf_path: String,
 }
