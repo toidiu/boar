@@ -1,0 +1,11 @@
+[build]
+target = "index.html"
+dist = "dist"
+
+[[hooks]]
+stage = "pre_build"
+command = "sh"
+command_arguments = ["-c", "npx tailwindcss -i input.css -o tailwind.css --minify"]
+
+[watch]
+ignore = ["tailwind.css"]

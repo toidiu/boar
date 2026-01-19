@@ -6,14 +6,14 @@ use std::{
 };
 
 #[allow(dead_code)]
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Report {
     pub plan: ExecutionPlan,
     pub stat_report: Vec<StatsReport>,
 }
 
 #[allow(dead_code)]
-#[derive(Debug, Default, Deserialize, Serialize)]
+#[derive(Debug, Clone, Default, Deserialize, Serialize)]
 pub struct StatsReport {
     pub aggregate: AggregateStats,
     pub cdf_path: String,
