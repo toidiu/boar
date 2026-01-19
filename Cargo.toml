@@ -12,6 +12,23 @@ path = "src/lib.rs"
 name = "boar"
 path = "src/main.rs"
 
+[[bin]]
+name = "viewer"
+path = "src/bin/viewer/main.rs"
+required-features = ["boar-viewer"]
+
+[features]
+default = []
+boar-viewer = [
+    "leptos",
+    "wasm-bindgen",
+    "wasm-bindgen-futures",
+    "web-sys",
+    "js-sys",
+    "console_error_panic_hook",
+    "getrandom",
+]
+
 [dependencies]
 byte-unit = { version = "5.1.6", features = ["serde"] }
 cfg-if = "1.0.4"
@@ -22,4 +39,23 @@ regex = "1.12.2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 statrs = "0.18.0"
-uuid = { version = "1.18.1", features = ["v4", "serde"] }
+uuid = { version = "1.18.1", features = ["v4", "serde", "js"] }
+
+# Viewer dependencies (optional, behind "boar-viewer" feature)
+console_error_panic_hook = { version = "0.1", optional = true }
+getrandom = { version = "0.2", features = ["js"], optional = true }
+js-sys = { version = "0.3", optional = true }
+leptos = { version = "0.7", features = ["csr"], optional = true }
+wasm-bindgen = { version = "0.2", optional = true }
+wasm-bindgen-futures = { version = "0.4", optional = true }
+web-sys = { version = "0.3", optional = true, features = [
+    "console",
+    "File",
+    "FileList",
+    "FileReader",
+    "HtmlInputElement",
+    "Event",
+    "DataTransferItemList",
+    "DataTransferItem",
+    "DataTransfer",
+] }

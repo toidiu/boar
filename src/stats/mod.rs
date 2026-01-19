@@ -120,20 +120,20 @@ impl Stats {
 }
 
 #[allow(dead_code)]
-#[derive(Debug, Default, Deserialize, Serialize)]
+#[derive(Debug, Clone, Default, Deserialize, Serialize)]
 pub struct AggregateStats {
-    name: String,
-    median: f64,
-    mean: Option<f64>,
-    std_dev: Option<f64>,
-    p0: f64,
-    p25: f64,
-    p50: f64,
-    p75: f64,
-    p90: f64,
-    p99: f64,
-    p100: f64,
-    trimean: f64,
+    pub name: String,
+    pub median: f64,
+    pub mean: Option<f64>,
+    pub std_dev: Option<f64>,
+    pub p0: f64,
+    pub p25: f64,
+    pub p50: f64,
+    pub p75: f64,
+    pub p90: f64,
+    pub p99: f64,
+    pub p100: f64,
+    pub trimean: f64,
 }
 
 impl AggregateStats {

@@ -1,3 +1,12 @@
-/target
+# Rust
+/target/
 *plot*.html
 report
+
+# Viewer
+## Node modules (for Tailwind in viewer)
+node_modules/
+## Trunk build output
+/viewer/dist/
+## Tailwind generated CSS
+/viewer/tailwind.css
