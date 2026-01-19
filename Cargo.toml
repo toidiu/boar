@@ -27,6 +27,7 @@ boar-viewer = [
     "js-sys",
     "console_error_panic_hook",
     "getrandom",
+    "humansize",
 ]
 
 [dependencies]
@@ -42,6 +43,7 @@ statrs = "0.18.0"
 uuid = { version = "1.18.1", features = ["v4", "serde", "js"] }
 
 # Viewer dependencies (optional, behind "boar-viewer" feature)
+humansize = { version = "2", optional = true }
 console_error_panic_hook = { version = "0.1", optional = true }
 getrandom = { version = "0.2", features = ["js"], optional = true }
 js-sys = { version = "0.3", optional = true }
