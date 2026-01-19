@@ -1,14 +1,77 @@
 use leptos::prelude::*;
 
+// All available aggregate stat fields
+const ALL_FIELDS: &[&str] = &[
+    "mean", "median", "std_dev", "p0", "p25", "p50", "p75", "p90", "p99", "p100", "trimean",
+];
+
+// Default visible fields
+const DEFAULT_FIELDS: &[&str] = &["trimean", "p99"];
+
+// localStorage key for column preferences
+const STORAGE_KEY: &str = "boar_viewer_visible_fields";
+
 fn main() {
     console_error_panic_hook::set_once();
     leptos::mount::mount_to_body(App);
+}
+
+/// Load visible fields from localStorage, or return default
+fn load_visible_fields() -> Vec<String> {
+    let window = web_sys::window().expect("no window");
+    let storage = window.local_storage().ok().flatten();
+
+    if let Some(storage) = storage {
+        if let Ok(Some(json)) = storage.get_item(STORAGE_KEY) {
+            if let Ok(fields) = serde_json::from_str::<Vec<String>>(&json) {
+                // Validate fields are still valid (filter out any that no longer exist)
+                let valid: Vec<String> = fields
+                    .into_iter()
+                    .filter(|f| ALL_FIELDS.contains(&f.as_str()))
+                    .collect();
+                if !valid.is_empty() {
+                    return valid;
+                }
+            }
+        }
+    }
+
+    // Return defaults if nothing saved or invalid
+    DEFAULT_FIELDS.iter().map(|s| s.to_string()).collect()
+}
+
+/// Save visible fields to localStorage
+fn save_visible_fields(fields: &[String]) {
+    let window = web_sys::window().expect("no window");
+    let storage = window.local_storage().ok().flatten();
+
+    if let Some(storage) = storage {
+        if let Ok(json) = serde_json::to_string(fields) {
+            let _ = storage.set_item(STORAGE_KEY, &json);
+        }
+    }
 }
 
 #[component]
 fn App() -> impl IntoView {
     // Store loaded reports
     let (reports, set_reports) = signal(Vec::<boar::Report>::new());
+
+    // Visible fields for stats columns - load from localStorage
+    let (visible_fields, set_visible_fields) = signal(load_visible_fields());
+
+    // Persist visible_fields to localStorage whenever it changes
+    Effect::new(move |_| {
+        let fields = visible_fields.get();
+        save_visible_fields(&fields);
+    });
+
+    // Settings modal visibility
+    let (show_settings, set_show_settings) = signal(false);
+
+    // Drag state for row reordering
+    let (dragging_index, set_dragging_index) = signal(Option::<usize>::None);
+    let (drop_target_index, set_drop_target_index) = signal(Option::<usize>::None);
 
     let has_reports = move || !reports.read().is_empty();
 
@@ -34,8 +97,112 @@ fn App() -> impl IntoView {
                 >
                     "Clear All"
                 </button>
+                <button
+                    on:click=move |_| set_show_settings.set(true)
+                    class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
+                >
+                    "Settings"
+                </button>
             </div>
-            <ReportList reports=reports set_reports=set_reports />
+            <ReportTable
+                reports=reports
+                set_reports=set_reports
+                visible_fields=visible_fields
+                dragging_index=dragging_index
+                set_dragging_index=set_dragging_index
+                drop_target_index=drop_target_index
+                set_drop_target_index=set_drop_target_index
+            />
+
+            // Settings Modal
+            {move || {
+                if show_settings.get() {
+                    view! {
+                        <SettingsModal
+                            visible_fields=visible_fields
+                            set_visible_fields=set_visible_fields
+                            set_show_settings=set_show_settings
+                        />
+                    }.into_any()
+                } else {
+                    view! { <div></div> }.into_any()
+                }
+            }}
+        </div>
+    }
+}
+
+#[component]
+fn SettingsModal(
+    visible_fields: ReadSignal<Vec<String>>,
+    set_visible_fields: WriteSignal<Vec<String>>,
+    set_show_settings: WriteSignal<bool>,
+) -> impl IntoView {
+    let on_close = move |_| {
+        set_show_settings.set(false);
+    };
+
+    view! {
+        <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div class="bg-white rounded-lg shadow-xl p-6 w-80 max-h-[80vh] overflow-y-auto">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-lg font-semibold text-gray-800">"Column Settings"</h2>
+                    <button
+                        on:click=on_close
+                        class="text-gray-400 hover:text-gray-600 text-2xl leading-none"
+                    >
+                        "×"
+                    </button>
+                </div>
+
+                <p class="text-sm text-gray-600 mb-4">"Select fields to display:"</p>
+
+                <div class="space-y-2">
+                    {ALL_FIELDS
+                        .iter()
+                        .map(|&field| {
+                            let field_str = field.to_string();
+                            let field_for_check = field_str.clone();
+                            let field_for_change = field_str.clone();
+
+                            let is_checked = move || {
+                                visible_fields.read().contains(&field_for_check)
+                            };
+
+                            let on_change = move |_| {
+                                let field = field_for_change.clone();
+                                set_visible_fields.update(|fields| {
+                                    if fields.contains(&field) {
+                                        fields.retain(|f| f != &field);
+                                    } else {
+                                        // Add in the order defined in ALL_FIELDS
+                                        let mut new_fields = Vec::new();
+                                        for &f in ALL_FIELDS {
+                                            let f_str = f.to_string();
+                                            if fields.contains(&f_str) || f_str == field {
+                                                new_fields.push(f_str);
+                                            }
+                                        }
+                                        *fields = new_fields;
+                                    }
+                                });
+                            };
+
+                            view! {
+                                <label class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-2 rounded">
+                                    <input
+                                        type="checkbox"
+                                        checked=is_checked
+                                        on:change=on_change
+                                        class="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                                    />
+                                    <span class="text-sm text-gray-700">{field_str}</span>
+                                </label>
+                            }
+                        })
+                        .collect::<Vec<_>>()}
+                </div>
+            </div>
         </div>
     }
 }
@@ -111,14 +278,21 @@ fn FilePicker(set_reports: WriteSignal<Vec<boar::Report>>) -> impl IntoView {
 }
 
 #[component]
-fn ReportList(
+fn ReportTable(
     reports: ReadSignal<Vec<boar::Report>>,
     set_reports: WriteSignal<Vec<boar::Report>>,
+    visible_fields: ReadSignal<Vec<String>>,
+    dragging_index: ReadSignal<Option<usize>>,
+    set_dragging_index: WriteSignal<Option<usize>>,
+    drop_target_index: ReadSignal<Option<usize>>,
+    set_drop_target_index: WriteSignal<Option<usize>>,
 ) -> impl IntoView {
     view! {
         <div>
             {move || {
                 let reports_vec = reports.read();
+                let fields = visible_fields.get();
+
                 if reports_vec.is_empty() {
                     view! {
                         <div class="text-gray-500 italic">
@@ -126,16 +300,146 @@ fn ReportList(
                         </div>
                     }.into_any()
                 } else {
-                    let cards: Vec<_> = reports_vec
+                    // Collect all unique stat names across all reports
+                    let stat_names: Vec<String> = {
+                        let mut names = Vec::new();
+                        for report in reports_vec.iter() {
+                            for stat in &report.stat_report {
+                                if !names.contains(&stat.aggregate.name) {
+                                    names.push(stat.aggregate.name.clone());
+                                }
+                            }
+                        }
+                        names
+                    };
+
+                    // Extract baseline stats from first report (for comparison coloring)
+                    let baseline_stats: std::collections::HashMap<(String, String), f64> = {
+                        let mut map = std::collections::HashMap::new();
+                        if let Some(first_report) = reports_vec.first() {
+                            for stat in &first_report.stat_report {
+                                let name = &stat.aggregate.name;
+                                // Store all field values for this stat
+                                if let Some(mean) = stat.aggregate.mean {
+                                    map.insert((name.clone(), "mean".to_string()), mean);
+                                }
+                                map.insert((name.clone(), "median".to_string()), stat.aggregate.median);
+                                if let Some(std_dev) = stat.aggregate.std_dev {
+                                    map.insert((name.clone(), "std_dev".to_string()), std_dev);
+                                }
+                                map.insert((name.clone(), "p0".to_string()), stat.aggregate.p0);
+                                map.insert((name.clone(), "p25".to_string()), stat.aggregate.p25);
+                                map.insert((name.clone(), "p50".to_string()), stat.aggregate.p50);
+                                map.insert((name.clone(), "p75".to_string()), stat.aggregate.p75);
+                                map.insert((name.clone(), "p90".to_string()), stat.aggregate.p90);
+                                map.insert((name.clone(), "p99".to_string()), stat.aggregate.p99);
+                                map.insert((name.clone(), "p100".to_string()), stat.aggregate.p100);
+                                map.insert((name.clone(), "trimean".to_string()), stat.aggregate.trimean);
+                            }
+                        }
+                        map
+                    };
+
+                    let fields_clone = fields.clone();
+                    let stat_names_clone = stat_names.clone();
+                    let num_reports = reports_vec.len();
+
+                    let rows: Vec<_> = reports_vec
                         .iter()
-                        .map(|report| {
+                        .enumerate()
+                        .map(|(index, report)| {
                             let report = report.clone();
-                            view! { <ReportCard report=report set_reports=set_reports /> }
+                            let stat_names = stat_names.clone();
+                            let fields = fields.clone();
+                            let baseline = baseline_stats.clone();
+                            view! {
+                                <ReportRow
+                                    report=report
+                                    index=index
+                                    total_count=num_reports
+                                    stat_names=stat_names
+                                    visible_fields=fields
+                                    baseline_stats=baseline
+                                    set_reports=set_reports
+                                    dragging_index=dragging_index
+                                    set_dragging_index=set_dragging_index
+                                    drop_target_index=drop_target_index
+                                    set_drop_target_index=set_drop_target_index
+                                />
+                            }
                         })
                         .collect();
+
+                    // First header row: config columns + stat names with colspan
+                    let stat_group_headers: Vec<_> = stat_names_clone
+                        .iter()
+                        .enumerate()
+                        .map(|(_, name)| {
+                            let colspan = fields_clone.len();
+                            view! {
+                                <th
+                                    colspan=colspan
+                                    class="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider border-l-2 border-gray-300 bg-gray-100"
+                                >
+                                    {name.clone()}
+                                </th>
+                            }
+                        })
+                        .collect();
+
+                    // Second header row: field names for each stat
+                    let field_headers: Vec<_> = stat_names_clone
+                        .iter()
+                        .enumerate()
+                        .flat_map(|(_, _)| {
+                            fields_clone.iter().enumerate().map(move |(i, field)| {
+                                let class = if i == 0 {
+                                    "px-3 py-2 text-center text-xs font-medium text-gray-600 border-l-2 border-gray-300 border-b border-gray-200 bg-gray-50"
+                                } else {
+                                    "px-3 py-2 text-center text-xs font-medium text-gray-600 border-r border-gray-200 border-b border-gray-200 bg-gray-50"
+                                };
+                                view! {
+                                    <th class=class>
+                                        {field.clone()}
+                                    </th>
+                                }
+                            }).collect::<Vec<_>>()
+                        })
+                        .collect();
+
                     view! {
-                        <div class="grid gap-4">
-                            {cards}
+                        <div class="overflow-x-auto bg-white rounded-lg shadow-lg border border-gray-300">
+                            <table class="min-w-full border-collapse">
+                                <thead>
+                                    <tr class="bg-gray-100 border-b-2 border-gray-300">
+                                        <th rowspan=2 class="px-3 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider border-r border-gray-200 bg-gray-100">
+                                            ""
+                                        </th>
+                                        <th rowspan=2 class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider border-r border-gray-200 bg-gray-100">
+                                            "UUID"
+                                        </th>
+                                        <th rowspan=2 class="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider border-r border-gray-200 bg-gray-100">
+                                            "Delay"
+                                        </th>
+                                        <th rowspan=2 class="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider border-r border-gray-200 bg-gray-100">
+                                            "Rate"
+                                        </th>
+                                        <th rowspan=2 class="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider border-r border-gray-200 bg-gray-100">
+                                            "Loss"
+                                        </th>
+                                        <th rowspan=2 class="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider border-r border-gray-200 bg-gray-100">
+                                            "CCA"
+                                        </th>
+                                        {stat_group_headers}
+                                    </tr>
+                                    <tr class="border-b border-gray-300">
+                                        {field_headers}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {rows}
+                                </tbody>
+                            </table>
                         </div>
                     }.into_any()
                 }
@@ -145,7 +449,20 @@ fn ReportList(
 }
 
 #[component]
-fn ReportCard(report: boar::Report, set_reports: WriteSignal<Vec<boar::Report>>) -> impl IntoView {
+fn ReportRow(
+    report: boar::Report,
+    index: usize,
+    #[allow(unused)] total_count: usize,
+    stat_names: Vec<String>,
+    visible_fields: Vec<String>,
+    baseline_stats: std::collections::HashMap<(String, String), f64>,
+    set_reports: WriteSignal<Vec<boar::Report>>,
+    dragging_index: ReadSignal<Option<usize>>,
+    set_dragging_index: WriteSignal<Option<usize>>,
+    drop_target_index: ReadSignal<Option<usize>>,
+    set_drop_target_index: WriteSignal<Option<usize>>,
+) -> impl IntoView {
+    let is_baseline = index == 0;
     let uuid = report.plan.uuid;
     let plan = report.plan.clone();
     let stats = report.stat_report.clone();
@@ -156,61 +473,349 @@ fn ReportCard(report: boar::Report, set_reports: WriteSignal<Vec<boar::Report>>)
         });
     };
 
-    view! {
-        <div class="bg-white rounded-lg shadow p-6 relative">
-            <button
-                on:click=on_remove
-                class="absolute top-2 right-2 w-8 h-8 flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full text-xl"
-                title="Remove report"
-            >
-                "×"
-            </button>
+    // Drag event handlers
+    let on_drag_start = move |ev: web_sys::DragEvent| {
+        set_dragging_index.set(Some(index));
+        set_drop_target_index.set(None);
+        // Set drag data (required for Firefox)
+        if let Some(dt) = ev.data_transfer() {
+            let _ = dt.set_data("text/plain", &index.to_string());
+            dt.set_effect_allowed("move");
+        }
+    };
 
-            <div class="flex justify-between items-start mb-4">
-                <h2 class="text-lg font-semibold text-gray-800">
-                    {format!("Report: {}", plan.uuid)}
-                </h2>
-            </div>
+    let on_drag_end = move |_| {
+        set_dragging_index.set(None);
+        set_drop_target_index.set(None);
+    };
 
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                <div>
-                    <span class="text-gray-500">"Delay: "</span>
-                    <span class="font-medium">{format!("{}ms", plan.network_setup.delay_ms)}</span>
-                </div>
-                <div>
-                    <span class="text-gray-500">"Rate: "</span>
-                    <span class="font-medium">{format!("{}mbit", plan.network_setup.rate_mbit)}</span>
-                </div>
-                <div>
-                    <span class="text-gray-500">"Loss: "</span>
-                    <span class="font-medium">{plan.network_setup.loss_model.clone()}</span>
-                </div>
-                <div>
-                    <span class="text-gray-500">"CCA: "</span>
-                    <span class="font-medium">{plan.endpoint_setup.server_cca.clone()}</span>
-                </div>
-            </div>
+    let on_drag_over = move |ev: web_sys::DragEvent| {
+        ev.prevent_default();
+        if let Some(dt) = ev.data_transfer() {
+            dt.set_drop_effect("move");
+        }
+        // Only set drop target if we're dragging a different row
+        if let Some(from_idx) = dragging_index.get() {
+            if from_idx != index {
+                set_drop_target_index.set(Some(index));
+            }
+        }
+    };
 
-            <div class="mt-4 pt-4 border-t border-gray-200">
-                <h3 class="text-sm font-medium text-gray-700 mb-2">"Statistics"</h3>
-                <div class="grid gap-2">
-                    {stats
-                        .iter()
-                        .map(|stat| {
-                            let name = stat.aggregate.name.clone();
-                            let median = stat.aggregate.median;
-                            view! {
-                                <div class="text-sm">
-                                    <span class="text-gray-500">{name}": "</span>
-                                    <span class="font-medium">
-                                        {format!("median={:.3}", median)}
-                                    </span>
-                                </div>
-                            }
+    let on_drag_leave = move |_| {
+        // Only clear if this row was the target
+        if drop_target_index.get() == Some(index) {
+            set_drop_target_index.set(None);
+        }
+    };
+
+    let on_drop = move |ev: web_sys::DragEvent| {
+        ev.prevent_default();
+        if let Some(from_index) = dragging_index.get() {
+            if from_index != index {
+                set_reports.update(|reports| {
+                    if from_index < reports.len() && index < reports.len() {
+                        let item = reports.remove(from_index);
+                        reports.insert(index, item);
+                    }
+                });
+            }
+        }
+        set_dragging_index.set(None);
+        set_drop_target_index.set(None);
+    };
+
+    // Create stat cells for each stat name × visible field combination
+    let stat_cells: Vec<_> =
+        stat_names
+            .iter()
+            .enumerate()
+            .flat_map(|(_, name)| {
+                let stat = stats.iter().find(|s| &s.aggregate.name == name);
+                let name_clone = name.clone();
+                let baseline_stats_clone = baseline_stats.clone();
+                visible_fields.iter().enumerate().map(move |(i, field)| {
+                let value = stat
+                    .map(|s| get_stat_field(s, field))
+                    .unwrap_or_else(|| "-".to_string());
+                
+                // Get current raw value for comparison
+                let current_value = stat.and_then(|s| get_stat_raw_value(s, field));
+                
+                // Get baseline value and compute comparison color
+                let comparison_style = if is_baseline {
+                    None // First row is the baseline, no comparison
+                } else {
+                    let baseline_key = (name_clone.clone(), field.clone());
+                    baseline_stats_clone.get(&baseline_key).and_then(|&baseline| {
+                        current_value.and_then(|current| {
+                            get_comparison_color(current, baseline, &name_clone)
                         })
-                        .collect::<Vec<_>>()}
+                    })
+                };
+                
+                let class = if i == 0 {
+                    "px-3 py-3 whitespace-nowrap text-sm text-gray-800 text-right font-mono border-l-2 border-gray-300 bg-white"
+                } else {
+                    "px-3 py-3 whitespace-nowrap text-sm text-gray-800 text-right font-mono border-r border-gray-200 bg-white"
+                };
+                
+                let style = comparison_style
+                    .map(|c| format!("background-color: {};", c))
+                    .unwrap_or_default();
+                
+                view! {
+                    <td class=class style=style>
+                        {value}
+                    </td>
+                }
+            }).collect::<Vec<_>>()
+            })
+            .collect();
+
+    // Determine row styling based on drag state
+    let row_class = move || {
+        let is_dragging = dragging_index.get() == Some(index);
+        let is_drop_target = drop_target_index.get() == Some(index);
+        let dragging_from = dragging_index.get();
+
+        if is_dragging {
+            // The row being dragged
+            "border-b border-gray-200 cursor-grabbing opacity-40 bg-gray-300 scale-[0.98] transition-all duration-150"
+        } else if is_drop_target {
+            // Show where the row will be inserted
+            if let Some(from_idx) = dragging_from {
+                if from_idx > index {
+                    // Dragging from below - show indicator at top
+                    "border-t-4 border-t-blue-500 border-b border-gray-200 bg-blue-50 cursor-grab transition-all duration-150"
+                } else {
+                    // Dragging from above - show indicator at bottom
+                    "border-b-4 border-b-blue-500 bg-blue-50 cursor-grab transition-all duration-150"
+                }
+            } else {
+                "border-b border-gray-200 hover:bg-gray-50 cursor-grab"
+            }
+        } else {
+            "border-b border-gray-200 hover:bg-gray-50 cursor-grab transition-all duration-150"
+        }
+    };
+
+    view! {
+        <tr
+            class=row_class
+            draggable="true"
+            on:dragstart=on_drag_start
+            on:dragend=on_drag_end
+            on:dragover=on_drag_over
+            on:dragleave=on_drag_leave
+            on:drop=on_drop
+        >
+            <td class="px-2 py-3 whitespace-nowrap bg-white border-r border-gray-200">
+                <div class="flex items-center gap-2">
+                    <span class="text-gray-400 hover:text-gray-600 cursor-grab text-base select-none" title="Drag to reorder">"⠿"</span>
+                    <button
+                        on:click=on_remove
+                        class="w-5 h-5 flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 rounded text-sm"
+                        title="Remove report"
+                    >
+                        "×"
+                    </button>
                 </div>
-            </div>
+            </td>
+            <td class="px-4 py-3 whitespace-nowrap text-xs text-gray-500 font-mono bg-white border-r border-gray-200">
+                <UuidCell uuid=uuid />
+            </td>
+            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-800 text-center bg-white border-r border-gray-200 font-medium">
+                {format!("{}ms", plan.network_setup.delay_ms)}
+            </td>
+            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-800 text-center bg-white border-r border-gray-200 font-medium">
+                {format!("{}mbit", plan.network_setup.rate_mbit)}
+            </td>
+            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-800 text-center bg-white border-r border-gray-200">
+                {plan.network_setup.loss_model.clone()}
+            </td>
+            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-800 text-center bg-white border-r border-gray-200 font-medium">
+                {plan.endpoint_setup.server_cca.clone()}
+            </td>
+            {stat_cells}
+        </tr>
+    }
+}
+
+/// Generate a pastel background color from a UUID
+fn uuid_to_color(uuid: uuid::Uuid) -> String {
+    let bytes = uuid.as_bytes();
+    // Use first 3 bytes for RGB, but make them pastel by mixing with white
+    // Pastel = high lightness, moderate saturation
+    let r = 180 + (bytes[0] % 60); // 180-239
+    let g = 180 + (bytes[1] % 60); // 180-239  
+    let b = 180 + (bytes[2] % 60); // 180-239
+    format!("rgb({}, {}, {})", r, g, b)
+}
+
+/// Returns true if lower values are better for this stat
+fn is_lower_better(stat_name: &str) -> bool {
+    matches!(stat_name, "DownloadDuration")
+}
+
+/// Calculate comparison color based on current vs baseline value
+/// Returns CSS background color string with appropriate tint and intensity
+fn get_comparison_color(current: f64, baseline: f64, stat_name: &str) -> Option<String> {
+    if baseline == 0.0 || current == baseline {
+        return None; // No comparison possible or same value
+    }
+
+    let lower_is_better = is_lower_better(stat_name);
+    let pct_diff = ((current - baseline) / baseline.abs()) * 100.0;
+
+    // Determine if this is better or worse
+    let is_better = if lower_is_better {
+        current < baseline
+    } else {
+        current > baseline
+    };
+
+    // Calculate intensity based on percentage difference (cap at 50% for full intensity)
+    let intensity = (pct_diff.abs() / 50.0).min(1.0) * 0.4; // Max opacity 0.4
+
+    if is_better {
+        // Green tint for better values
+        Some(format!("rgba(34, 197, 94, {:.2})", intensity))
+    } else {
+        // Red tint for worse values
+        Some(format!("rgba(239, 68, 68, {:.2})", intensity))
+    }
+}
+
+/// Format a number with commas as thousand separators (max 3 decimal places)
+fn format_with_commas(n: f64) -> String {
+    // Round to max 3 decimal places, then remove trailing zeros
+    let rounded = (n * 1000.0).round() / 1000.0;
+    let s = format!("{}", rounded);
+
+    if let Some(dot_pos) = s.find('.') {
+        let int_part = &s[..dot_pos];
+        let dec_part = &s[dot_pos..]; // includes the dot
+        // Trim trailing zeros from decimal part, but keep at least one digit after dot if there's a decimal
+        let trimmed_dec: String = dec_part.trim_end_matches('0').to_string();
+        let final_dec = if trimmed_dec == "." { "" } else { &trimmed_dec };
+        format!("{}{}", add_commas_to_int(int_part), final_dec)
+    } else {
+        add_commas_to_int(&s)
+    }
+}
+
+/// Add commas to an integer string
+fn add_commas_to_int(s: &str) -> String {
+    let negative = s.starts_with('-');
+    let digits: String = if negative {
+        s[1..].to_string()
+    } else {
+        s.to_string()
+    };
+
+    let mut result = String::new();
+    for (i, c) in digits.chars().rev().enumerate() {
+        if i > 0 && i % 3 == 0 {
+            result.push(',');
+        }
+        result.push(c);
+    }
+
+    let formatted: String = result.chars().rev().collect();
+    if negative {
+        format!("-{}", formatted)
+    } else {
+        formatted
+    }
+}
+
+/// Get the value of a specific field from AggregateStats
+fn get_stat_field(stat: &boar::StatsReport, field: &str) -> String {
+    match field {
+        "mean" => stat
+            .aggregate
+            .mean
+            .map(|v| format_with_commas(v))
+            .unwrap_or_else(|| "-".to_string()),
+        "median" => format_with_commas(stat.aggregate.median),
+        "std_dev" => stat
+            .aggregate
+            .std_dev
+            .map(|v| format_with_commas(v))
+            .unwrap_or_else(|| "-".to_string()),
+        "p0" => format_with_commas(stat.aggregate.p0),
+        "p25" => format_with_commas(stat.aggregate.p25),
+        "p50" => format_with_commas(stat.aggregate.p50),
+        "p75" => format_with_commas(stat.aggregate.p75),
+        "p90" => format_with_commas(stat.aggregate.p90),
+        "p99" => format_with_commas(stat.aggregate.p99),
+        "p100" => format_with_commas(stat.aggregate.p100),
+        "trimean" => format_with_commas(stat.aggregate.trimean),
+        _ => "-".to_string(),
+    }
+}
+
+/// Get the raw numeric value of a specific field from AggregateStats (for comparison)
+fn get_stat_raw_value(stat: &boar::StatsReport, field: &str) -> Option<f64> {
+    match field {
+        "mean" => stat.aggregate.mean,
+        "median" => Some(stat.aggregate.median),
+        "std_dev" => stat.aggregate.std_dev,
+        "p0" => Some(stat.aggregate.p0),
+        "p25" => Some(stat.aggregate.p25),
+        "p50" => Some(stat.aggregate.p50),
+        "p75" => Some(stat.aggregate.p75),
+        "p90" => Some(stat.aggregate.p90),
+        "p99" => Some(stat.aggregate.p99),
+        "p100" => Some(stat.aggregate.p100),
+        "trimean" => Some(stat.aggregate.trimean),
+        _ => None,
+    }
+}
+
+#[component]
+fn UuidCell(uuid: uuid::Uuid) -> impl IntoView {
+    let full_uuid = uuid.to_string();
+    let short_uuid = format!("{}...", &full_uuid[..5]);
+    let full_uuid_for_click = full_uuid.clone();
+    let full_uuid_for_title = full_uuid.clone();
+    let bg_color = uuid_to_color(uuid);
+
+    let (copied, set_copied) = signal(false);
+
+    let on_click = move |_| {
+        let uuid_str = full_uuid_for_click.clone();
+        wasm_bindgen_futures::spawn_local(async move {
+            if let Some(window) = web_sys::window() {
+                let clipboard = window.navigator().clipboard();
+                let _ = wasm_bindgen_futures::JsFuture::from(clipboard.write_text(&uuid_str)).await;
+                set_copied.set(true);
+                // Reset after 1.5 seconds
+                let _ = wasm_bindgen_futures::JsFuture::from(js_sys::Promise::new(
+                    &mut |resolve, _| {
+                        let _ = window
+                            .set_timeout_with_callback_and_timeout_and_arguments_0(&resolve, 1500);
+                    },
+                ))
+                .await;
+                set_copied.set(false);
+            }
+        });
+    };
+
+    let style = format!("background-color: {};", bg_color);
+
+    view! {
+        <div
+            class="px-2 py-1 rounded cursor-pointer hover:brightness-95 transition-all"
+            style=style
+            title=full_uuid_for_title
+            on:click=on_click
+        >
+            <span class="text-gray-700 font-mono text-xs">
+                {move || if copied.get() { "Copied!".to_string() } else { short_uuid.clone() }}
+            </span>
         </div>
     }
 }

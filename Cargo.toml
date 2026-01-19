@@ -49,6 +49,7 @@ leptos = { version = "0.7", features = ["csr"], optional = true }
 wasm-bindgen = { version = "0.2", optional = true }
 wasm-bindgen-futures = { version = "0.4", optional = true }
 web-sys = { version = "0.3", optional = true, features = [
+    "Clipboard",
     "console",
     "DataTransfer",
     "DataTransferItem",
@@ -58,5 +59,7 @@ web-sys = { version = "0.3", optional = true, features = [
     "FileList",
     "FileReader",
     "HtmlInputElement",
+    "Navigator",
+    "Storage",
     "Window",
 ] }
