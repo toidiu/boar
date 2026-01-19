@@ -87,8 +87,7 @@ fn App() -> impl IntoView {
 
     // Global Escape key handler for closing modals/dropdowns
     Effect::new(move |_| {
-        use wasm_bindgen::JsCast;
-        use wasm_bindgen::prelude::*;
+        use wasm_bindgen::{JsCast, prelude::*};
 
         let window = web_sys::window().expect("no window");
         let closure =
@@ -653,11 +652,11 @@ fn ReportRow(
                 let baseline_stats_clone = baseline_stats.clone();
                 let cdf_html_map_clone = cdf_html_map.clone();
                 let set_expanded_cdf_clone = set_expanded_cdf;
-                
+
                 // Convert PascalCase stat name to snake_case for CDF lookup
                 let cdf_key = pascal_to_snake(name);
                 let cdf_content = cdf_html_map_clone.get(&cdf_key).cloned();
-                
+
                 // CDF preview cell first (with left border for stat group)
                 let cdf_cell = view! {
                     <td class="px-2 py-1 whitespace-nowrap text-center border-l-2 border-gray-300 bg-white">
@@ -669,18 +668,18 @@ fn ReportRow(
                         />
                     </td>
                 }.into_any();
-                
+
                 let mut cells = vec![cdf_cell];
-                
+
                 // Then stat field cells
                 let field_cells: Vec<_> = visible_fields.iter().enumerate().map(move |(_, field)| {
                 let value = stat
                     .map(|s| get_stat_field(s, field))
                     .unwrap_or_else(|| "-".to_string());
-                
+
                 // Get current raw value for comparison
                 let current_value = stat.and_then(|s| get_stat_raw_value(s, field));
-                
+
                 // Get baseline value and compute comparison color
                 let comparison_style = if is_baseline {
                     None // First row is the baseline, no comparison
@@ -692,18 +691,18 @@ fn ReportRow(
                         })
                     })
                 };
-                
+
                 let style = comparison_style
                     .map(|c| format!("background-color: {};", c))
                     .unwrap_or_default();
-                
+
                 view! {
                     <td class="px-3 py-3 whitespace-nowrap text-sm text-gray-800 text-right font-mono border-r border-gray-200 bg-white" style=style>
                         {value}
                     </td>
                 }.into_any()
             }).collect();
-                
+
                 cells.extend(field_cells);
                 cells
             })
@@ -780,7 +779,7 @@ fn uuid_to_color(uuid: uuid::Uuid) -> String {
     // Use first 3 bytes for RGB, but make them pastel by mixing with white
     // Pastel = high lightness, moderate saturation
     let r = 180 + (bytes[0] % 60); // 180-239
-    let g = 180 + (bytes[1] % 60); // 180-239  
+    let g = 180 + (bytes[1] % 60); // 180-239
     let b = 180 + (bytes[2] % 60); // 180-239
     format!("rgb({}, {}, {})", r, g, b)
 }
@@ -1003,7 +1002,7 @@ fn CdfPreview(
             let on_click = move |_| {
                 set_expanded_cdf.set(Some((report_uuid, stat_name_for_click.clone())));
             };
-            
+
             view! {
                 <div
                     class="w-20 h-14 cursor-pointer hover:ring-2 hover:ring-blue-400 rounded overflow-hidden bg-gray-50"

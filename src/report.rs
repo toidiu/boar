@@ -1,4 +1,7 @@
-use crate::{ExecutionPlan, stats::AggregateStats, stats::Stats};
+use crate::{
+    ExecutionPlan,
+    stats::{AggregateStats, Stats},
+};
 use serde::{Deserialize, Serialize};
 use std::{
     fs::{File, create_dir_all},
