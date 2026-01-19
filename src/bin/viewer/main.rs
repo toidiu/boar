@@ -1,4 +1,5 @@
 use leptos::prelude::*;
+use std::collections::HashMap;
 
 // All available aggregate stat fields
 const ALL_FIELDS: &[&str] = &[
@@ -10,6 +11,14 @@ const DEFAULT_FIELDS: &[&str] = &["trimean", "p99"];
 
 // localStorage key for column preferences
 const STORAGE_KEY: &str = "boar_viewer_visible_fields";
+
+/// A report with its associated CDF HTML content
+#[derive(Clone)]
+struct ReportWithCdf {
+    report: boar::Report,
+    /// Map from stat name to CDF HTML content
+    cdf_html: HashMap<String, String>,
+}
 
 fn main() {
     console_error_panic_hook::set_once();
@@ -54,8 +63,8 @@ fn save_visible_fields(fields: &[String]) {
 
 #[component]
 fn App() -> impl IntoView {
-    // Store loaded reports
-    let (reports, set_reports) = signal(Vec::<boar::Report>::new());
+    // Store loaded reports with CDF content
+    let (reports, set_reports) = signal(Vec::<ReportWithCdf>::new());
 
     // Visible fields for stats columns - load from localStorage
     let (visible_fields, set_visible_fields) = signal(load_visible_fields());
@@ -72,6 +81,32 @@ fn App() -> impl IntoView {
     // Drag state for row reordering
     let (dragging_index, set_dragging_index) = signal(Option::<usize>::None);
     let (drop_target_index, set_drop_target_index) = signal(Option::<usize>::None);
+
+    // Expanded CDF state: (report_uuid, stat_name)
+    let (expanded_cdf, set_expanded_cdf) = signal(Option::<(uuid::Uuid, String)>::None);
+
+    // Global Escape key handler for closing modals/dropdowns
+    Effect::new(move |_| {
+        use wasm_bindgen::JsCast;
+        use wasm_bindgen::prelude::*;
+
+        let window = web_sys::window().expect("no window");
+        let closure =
+            Closure::<dyn Fn(web_sys::KeyboardEvent)>::new(move |ev: web_sys::KeyboardEvent| {
+                if ev.key() == "Escape" {
+                    // Close CDF modal first (higher priority), then settings dropdown
+                    if expanded_cdf.get().is_some() {
+                        set_expanded_cdf.set(None);
+                    } else if show_settings.get() {
+                        set_show_settings.set(false);
+                    }
+                }
+            });
+
+        let _ =
+            window.add_event_listener_with_callback("keydown", closure.as_ref().unchecked_ref());
+        closure.forget(); // Leak the closure to keep it alive
+    });
 
     let has_reports = move || !reports.read().is_empty();
 
@@ -112,7 +147,34 @@ fn App() -> impl IntoView {
                 set_dragging_index=set_dragging_index
                 drop_target_index=drop_target_index
                 set_drop_target_index=set_drop_target_index
+                _expanded_cdf=expanded_cdf
+                set_expanded_cdf=set_expanded_cdf
             />
+
+            // CDF Modal (expanded view)
+            {move || {
+                if let Some((report_uuid, stat_name)) = expanded_cdf.get() {
+                    // Find the CDF HTML content
+                    let cdf_html = reports.read()
+                        .iter()
+                        .find(|r| r.report.plan.uuid == report_uuid)
+                        .and_then(|r| r.cdf_html.get(&stat_name).cloned());
+
+                    if let Some(html_content) = cdf_html {
+                        view! {
+                            <CdfModal
+                                stat_name=stat_name
+                                html_content=html_content
+                                set_expanded_cdf=set_expanded_cdf
+                            />
+                        }.into_any()
+                    } else {
+                        view! { <div></div> }.into_any()
+                    }
+                } else {
+                    view! { <div></div> }.into_any()
+                }
+            }}
         </div>
     }
 }
@@ -222,7 +284,7 @@ fn SettingsDropdown(
 }
 
 #[component]
-fn FilePicker(set_reports: WriteSignal<Vec<boar::Report>>) -> impl IntoView {
+fn FilePicker(set_reports: WriteSignal<Vec<ReportWithCdf>>) -> impl IntoView {
     use leptos::html::Input;
 
     let input_ref: NodeRef<Input> = NodeRef::new();
@@ -239,28 +301,67 @@ fn FilePicker(set_reports: WriteSignal<Vec<boar::Report>>) -> impl IntoView {
         let input: web_sys::HtmlInputElement = event_target(&ev);
         if let Some(files) = input.files() {
             wasm_bindgen_futures::spawn_local(async move {
-                let mut loaded_reports = Vec::new();
+                // Group files by directory (report folder)
+                let mut folder_files: HashMap<String, Vec<web_sys::File>> = HashMap::new();
 
                 for i in 0..files.length() {
                     if let Some(file) = files.get(i) {
-                        // Only process report.json files
-                        if file.name() == "report.json" {
+                        // Get the relative path which includes folder structure
+                        let path = get_file_relative_path(&file);
+                        // Extract folder name (parent directory of the file)
+                        if let Some(folder) = path.rsplit_once('/').map(|(dir, _)| dir.to_string())
+                        {
+                            folder_files.entry(folder).or_default().push(file);
+                        }
+                    }
+                }
+
+                let mut loaded_reports = Vec::new();
+
+                // Process each folder
+                for (_folder, files) in folder_files {
+                    let mut report: Option<boar::Report> = None;
+                    let mut cdf_html: HashMap<String, String> = HashMap::new();
+
+                    for file in files {
+                        let name = file.name();
+                        if name == "report.json" {
                             if let Ok(text) = read_file_as_text(&file).await {
-                                if let Ok(report) = serde_json::from_str::<boar::Report>(&text) {
-                                    loaded_reports.push(report);
+                                if let Ok(r) = serde_json::from_str::<boar::Report>(&text) {
+                                    report = Some(r);
                                 }
                             }
+                        } else if name.starts_with("cdf_") && name.ends_with(".html") {
+                            // Extract stat name from filename: cdf_download_duration.html -> DownloadDuration
+                            if let Ok(html) = read_file_as_text(&file).await {
+                                // Get stat name from file, e.g., "cdf_download_duration.html"
+                                let stat_name = name
+                                    .trim_start_matches("cdf_")
+                                    .trim_end_matches(".html")
+                                    .to_string();
+                                cdf_html.insert(stat_name, html);
+                            }
                         }
+                    }
+
+                    if let Some(r) = report {
+                        loaded_reports.push(ReportWithCdf {
+                            report: r,
+                            cdf_html,
+                        });
                     }
                 }
 
                 // Accumulate reports, deduplicating by UUID
                 if !loaded_reports.is_empty() {
                     set_reports.update(|existing| {
-                        for report in loaded_reports {
+                        for report_with_cdf in loaded_reports {
                             // Only add if UUID not already present
-                            if !existing.iter().any(|r| r.plan.uuid == report.plan.uuid) {
-                                existing.push(report);
+                            if !existing
+                                .iter()
+                                .any(|r| r.report.plan.uuid == report_with_cdf.report.plan.uuid)
+                            {
+                                existing.push(report_with_cdf);
                             }
                         }
                     });
@@ -293,13 +394,15 @@ fn FilePicker(set_reports: WriteSignal<Vec<boar::Report>>) -> impl IntoView {
 
 #[component]
 fn ReportTable(
-    reports: ReadSignal<Vec<boar::Report>>,
-    set_reports: WriteSignal<Vec<boar::Report>>,
+    reports: ReadSignal<Vec<ReportWithCdf>>,
+    set_reports: WriteSignal<Vec<ReportWithCdf>>,
     visible_fields: ReadSignal<Vec<String>>,
     dragging_index: ReadSignal<Option<usize>>,
     set_dragging_index: WriteSignal<Option<usize>>,
     drop_target_index: ReadSignal<Option<usize>>,
     set_drop_target_index: WriteSignal<Option<usize>>,
+    _expanded_cdf: ReadSignal<Option<(uuid::Uuid, String)>>,
+    set_expanded_cdf: WriteSignal<Option<(uuid::Uuid, String)>>,
 ) -> impl IntoView {
     view! {
         <div>
@@ -317,8 +420,8 @@ fn ReportTable(
                     // Collect all unique stat names across all reports
                     let stat_names: Vec<String> = {
                         let mut names = Vec::new();
-                        for report in reports_vec.iter() {
-                            for stat in &report.stat_report {
+                        for rwc in reports_vec.iter() {
+                            for stat in &rwc.report.stat_report {
                                 if !names.contains(&stat.aggregate.name) {
                                     names.push(stat.aggregate.name.clone());
                                 }
@@ -330,8 +433,8 @@ fn ReportTable(
                     // Extract baseline stats from first report (for comparison coloring)
                     let baseline_stats: std::collections::HashMap<(String, String), f64> = {
                         let mut map = std::collections::HashMap::new();
-                        if let Some(first_report) = reports_vec.first() {
-                            for stat in &first_report.stat_report {
+                        if let Some(first_rwc) = reports_vec.first() {
+                            for stat in &first_rwc.report.stat_report {
                                 let name = &stat.aggregate.name;
                                 // Store all field values for this stat
                                 if let Some(mean) = stat.aggregate.mean {
@@ -361,14 +464,14 @@ fn ReportTable(
                     let rows: Vec<_> = reports_vec
                         .iter()
                         .enumerate()
-                        .map(|(index, report)| {
-                            let report = report.clone();
+                        .map(|(index, rwc)| {
+                            let rwc = rwc.clone();
                             let stat_names = stat_names.clone();
                             let fields = fields.clone();
                             let baseline = baseline_stats.clone();
                             view! {
                                 <ReportRow
-                                    report=report
+                                    report_with_cdf=rwc
                                     index=index
                                     total_count=num_reports
                                     stat_names=stat_names
@@ -379,17 +482,18 @@ fn ReportTable(
                                     set_dragging_index=set_dragging_index
                                     drop_target_index=drop_target_index
                                     set_drop_target_index=set_drop_target_index
+                                    set_expanded_cdf=set_expanded_cdf
                                 />
                             }
                         })
                         .collect();
 
-                    // First header row: config columns + stat names with colspan
+                    // First header row: config columns + stat names with colspan (+1 for CDF)
                     let stat_group_headers: Vec<_> = stat_names_clone
                         .iter()
                         .enumerate()
                         .map(|(_, name)| {
-                            let colspan = fields_clone.len();
+                            let colspan = fields_clone.len() + 1; // +1 for CDF column
                             view! {
                                 <th
                                     colspan=colspan
@@ -401,23 +505,27 @@ fn ReportTable(
                         })
                         .collect();
 
-                    // Second header row: field names for each stat
+                    // Second header row: CDF column first, then field names for each stat
                     let field_headers: Vec<_> = stat_names_clone
                         .iter()
                         .enumerate()
                         .flat_map(|(_, _)| {
-                            fields_clone.iter().enumerate().map(move |(i, field)| {
-                                let class = if i == 0 {
-                                    "px-3 py-2 text-center text-xs font-medium text-gray-600 border-l-2 border-gray-300 border-b border-gray-200 bg-gray-50"
-                                } else {
-                                    "px-3 py-2 text-center text-xs font-medium text-gray-600 border-r border-gray-200 border-b border-gray-200 bg-gray-50"
-                                };
+                            // CDF header first (with left border for stat group)
+                            let mut headers = vec![view! {
+                                <th class="px-3 py-2 text-center text-xs font-medium text-gray-600 border-l-2 border-gray-300 border-b border-gray-200 bg-gray-50">
+                                    {"CDF".to_string()}
+                                </th>
+                            }];
+                            // Then stat field headers
+                            let field_headers: Vec<_> = fields_clone.iter().enumerate().map(move |(_, field)| {
                                 view! {
-                                    <th class=class>
+                                    <th class="px-3 py-2 text-center text-xs font-medium text-gray-600 border-r border-gray-200 border-b border-gray-200 bg-gray-50">
                                         {field.clone()}
                                     </th>
                                 }
-                            }).collect::<Vec<_>>()
+                            }).collect();
+                            headers.extend(field_headers);
+                            headers
                         })
                         .collect();
 
@@ -432,17 +540,8 @@ fn ReportTable(
                                         <th rowspan=2 class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider border-r border-gray-200 bg-gray-100">
                                             "UUID"
                                         </th>
-                                        <th rowspan=2 class="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider border-r border-gray-200 bg-gray-100">
-                                            "Delay"
-                                        </th>
-                                        <th rowspan=2 class="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider border-r border-gray-200 bg-gray-100">
-                                            "Rate"
-                                        </th>
-                                        <th rowspan=2 class="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider border-r border-gray-200 bg-gray-100">
-                                            "Loss"
-                                        </th>
-                                        <th rowspan=2 class="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider border-r border-gray-200 bg-gray-100">
-                                            "CCA"
+                                        <th rowspan=2 class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider border-r border-gray-200 bg-gray-100">
+                                            "Setup"
                                         </th>
                                         {stat_group_headers}
                                     </tr>
@@ -464,26 +563,29 @@ fn ReportTable(
 
 #[component]
 fn ReportRow(
-    report: boar::Report,
+    report_with_cdf: ReportWithCdf,
     index: usize,
     #[allow(unused)] total_count: usize,
     stat_names: Vec<String>,
     visible_fields: Vec<String>,
     baseline_stats: std::collections::HashMap<(String, String), f64>,
-    set_reports: WriteSignal<Vec<boar::Report>>,
+    set_reports: WriteSignal<Vec<ReportWithCdf>>,
     dragging_index: ReadSignal<Option<usize>>,
     set_dragging_index: WriteSignal<Option<usize>>,
     drop_target_index: ReadSignal<Option<usize>>,
     set_drop_target_index: WriteSignal<Option<usize>>,
+    set_expanded_cdf: WriteSignal<Option<(uuid::Uuid, String)>>,
 ) -> impl IntoView {
     let is_baseline = index == 0;
+    let report = report_with_cdf.report.clone();
+    let cdf_html_map = report_with_cdf.cdf_html.clone();
     let uuid = report.plan.uuid;
     let plan = report.plan.clone();
     let stats = report.stat_report.clone();
 
     let on_remove = move |_| {
         set_reports.update(|reports| {
-            reports.retain(|r| r.plan.uuid != uuid);
+            reports.retain(|r| r.report.plan.uuid != uuid);
         });
     };
 
@@ -540,6 +642,7 @@ fn ReportRow(
     };
 
     // Create stat cells for each stat name × visible field combination
+    let report_uuid = report.plan.uuid;
     let stat_cells: Vec<_> =
         stat_names
             .iter()
@@ -548,7 +651,29 @@ fn ReportRow(
                 let stat = stats.iter().find(|s| &s.aggregate.name == name);
                 let name_clone = name.clone();
                 let baseline_stats_clone = baseline_stats.clone();
-                visible_fields.iter().enumerate().map(move |(i, field)| {
+                let cdf_html_map_clone = cdf_html_map.clone();
+                let set_expanded_cdf_clone = set_expanded_cdf;
+                
+                // Convert PascalCase stat name to snake_case for CDF lookup
+                let cdf_key = pascal_to_snake(name);
+                let cdf_content = cdf_html_map_clone.get(&cdf_key).cloned();
+                
+                // CDF preview cell first (with left border for stat group)
+                let cdf_cell = view! {
+                    <td class="px-2 py-1 whitespace-nowrap text-center border-l-2 border-gray-300 bg-white">
+                        <CdfPreview
+                            cdf_content=cdf_content.clone()
+                            stat_name=cdf_key.clone()
+                            report_uuid=report_uuid
+                            set_expanded_cdf=set_expanded_cdf_clone
+                        />
+                    </td>
+                }.into_any();
+                
+                let mut cells = vec![cdf_cell];
+                
+                // Then stat field cells
+                let field_cells: Vec<_> = visible_fields.iter().enumerate().map(move |(_, field)| {
                 let value = stat
                     .map(|s| get_stat_field(s, field))
                     .unwrap_or_else(|| "-".to_string());
@@ -568,22 +693,19 @@ fn ReportRow(
                     })
                 };
                 
-                let class = if i == 0 {
-                    "px-3 py-3 whitespace-nowrap text-sm text-gray-800 text-right font-mono border-l-2 border-gray-300 bg-white"
-                } else {
-                    "px-3 py-3 whitespace-nowrap text-sm text-gray-800 text-right font-mono border-r border-gray-200 bg-white"
-                };
-                
                 let style = comparison_style
                     .map(|c| format!("background-color: {};", c))
                     .unwrap_or_default();
                 
                 view! {
-                    <td class=class style=style>
+                    <td class="px-3 py-3 whitespace-nowrap text-sm text-gray-800 text-right font-mono border-r border-gray-200 bg-white" style=style>
                         {value}
                     </td>
-                }
-            }).collect::<Vec<_>>()
+                }.into_any()
+            }).collect();
+                
+                cells.extend(field_cells);
+                cells
             })
             .collect();
 
@@ -639,17 +761,13 @@ fn ReportRow(
             <td class="px-4 py-3 whitespace-nowrap text-xs text-gray-500 font-mono bg-white border-r border-gray-200">
                 <UuidCell uuid=uuid />
             </td>
-            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-800 text-center bg-white border-r border-gray-200 font-medium">
-                {format!("{}ms", plan.network_setup.delay_ms)}
-            </td>
-            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-800 text-center bg-white border-r border-gray-200 font-medium">
-                {format!("{}mbit", plan.network_setup.rate_mbit)}
-            </td>
-            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-800 text-center bg-white border-r border-gray-200">
-                {plan.network_setup.loss_model.clone()}
-            </td>
-            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-800 text-center bg-white border-r border-gray-200 font-medium">
-                {plan.endpoint_setup.server_cca.clone()}
+            <td class="px-4 py-2 text-sm text-gray-800 bg-white border-r border-gray-200">
+                <div class="flex flex-col gap-0.5">
+                    <div><span class="text-gray-500">"Delay: "</span><span class="font-medium">{format!("{}ms", plan.network_setup.delay_ms)}</span></div>
+                    <div><span class="text-gray-500">"Rate: "</span><span class="font-medium">{format!("{}mbit", plan.network_setup.rate_mbit)}</span></div>
+                    <div><span class="text-gray-500">"Loss: "</span><span>{plan.network_setup.loss_model.clone()}</span></div>
+                    <div><span class="text-gray-500">"CCA: "</span><span class="font-medium">{plan.endpoint_setup.server_cca.clone()}</span></div>
+                </div>
             </td>
             {stat_cells}
         </tr>
@@ -842,4 +960,137 @@ async fn read_file_as_text(file: &web_sys::File) -> Result<String, wasm_bindgen:
     let uint8_array = Uint8Array::new(&array_buffer);
     let vec = uint8_array.to_vec();
     String::from_utf8(vec).map_err(|e| wasm_bindgen::JsValue::from_str(&e.to_string()))
+}
+
+/// Get the relative path from a File using webkitRelativePath property
+fn get_file_relative_path(file: &web_sys::File) -> String {
+    let file_ref: &js_sys::Object = file.as_ref();
+    js_sys::Reflect::get(
+        file_ref,
+        &wasm_bindgen::JsValue::from_str("webkitRelativePath"),
+    )
+    .ok()
+    .and_then(|v| v.as_string())
+    .unwrap_or_else(|| file.name())
+}
+
+/// Convert PascalCase to snake_case (e.g., "DownloadDuration" -> "download_duration")
+fn pascal_to_snake(s: &str) -> String {
+    let mut result = String::new();
+    for (i, c) in s.chars().enumerate() {
+        if c.is_uppercase() {
+            if i > 0 {
+                result.push('_');
+            }
+            result.push(c.to_ascii_lowercase());
+        } else {
+            result.push(c);
+        }
+    }
+    result
+}
+
+#[component]
+fn CdfPreview(
+    cdf_content: Option<String>,
+    stat_name: String,
+    report_uuid: uuid::Uuid,
+    set_expanded_cdf: WriteSignal<Option<(uuid::Uuid, String)>>,
+) -> impl IntoView {
+    match cdf_content {
+        Some(html) => {
+            let stat_name_for_click = stat_name.clone();
+            let on_click = move |_| {
+                set_expanded_cdf.set(Some((report_uuid, stat_name_for_click.clone())));
+            };
+            
+            view! {
+                <div
+                    class="w-20 h-14 cursor-pointer hover:ring-2 hover:ring-blue-400 rounded overflow-hidden bg-gray-50"
+                    title="Click to expand CDF"
+                    on:click=on_click
+                >
+                    <iframe
+                        srcdoc=html
+                        class="w-full h-full pointer-events-none border-0"
+                        style="transform: scale(0.15); transform-origin: top left; width: 666%; height: 666%;"
+                        sandbox="allow-scripts"
+                    />
+                </div>
+            }.into_any()
+        }
+        None => {
+            view! {
+                <div class="w-20 h-14 flex items-center justify-center text-gray-300 text-xs bg-gray-50 rounded">
+                    "No CDF"
+                </div>
+            }.into_any()
+        }
+    }
+}
+
+#[component]
+fn CdfModal(
+    stat_name: String,
+    html_content: String,
+    set_expanded_cdf: WriteSignal<Option<(uuid::Uuid, String)>>,
+) -> impl IntoView {
+    let on_close = move |_| {
+        set_expanded_cdf.set(None);
+    };
+
+    // Close on escape key
+    let on_keydown = move |ev: web_sys::KeyboardEvent| {
+        if ev.key() == "Escape" {
+            set_expanded_cdf.set(None);
+        }
+    };
+
+    // Convert snake_case back to readable name for display
+    let display_name = stat_name.replace('_', " ");
+    let display_name = display_name
+        .split_whitespace()
+        .map(|word| {
+            let mut chars = word.chars();
+            match chars.next() {
+                Some(first) => first.to_uppercase().chain(chars).collect::<String>(),
+                None => String::new(),
+            }
+        })
+        .collect::<Vec<_>>()
+        .join(" ");
+
+    view! {
+        <div
+            class="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+            on:click=on_close
+            on:keydown=on_keydown
+            tabindex="-1"
+        >
+            <div
+                class="bg-white rounded-lg shadow-2xl w-[90vw] h-[85vh] flex flex-col"
+                on:click=move |ev| ev.stop_propagation()
+            >
+                <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+                    <h2 class="text-xl font-semibold text-gray-800">
+                        {format!("CDF: {}", display_name)}
+                    </h2>
+                    <button
+                        on:click=on_close
+                        class="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full text-xl"
+                        title="Close (Esc)"
+                    >
+                        "×"
+                    </button>
+                </div>
+                <div class="flex-1 p-4 overflow-hidden">
+                    <iframe
+                        srcdoc=html_content
+                        class="w-full h-full border-0 rounded"
+                        sandbox="allow-scripts"
+                    />
+                </div>
+            </div>
+        </div>
+    }
 }
