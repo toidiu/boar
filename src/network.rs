@@ -1,11 +1,11 @@
 use crate::error::{BoarError, Result};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::{
     fmt::Debug,
     process::{Command, Stdio},
 };
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub(crate) struct NetworkSetup {
     cmd: String,
     pub delay_ms: u64,
