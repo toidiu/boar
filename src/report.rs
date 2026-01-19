@@ -1,18 +1,19 @@
 use crate::{ExecutionPlan, Stats, stats::AggregateStats};
+use serde::Serialize;
 use std::{
     fs::{File, create_dir_all},
     io::Write,
 };
 
 #[allow(dead_code)]
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub(crate) struct Report {
     pub plan: ExecutionPlan,
     stat_report: Vec<StatsReport>,
 }
 
 #[allow(dead_code)]
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Serialize)]
 struct StatsReport {
     pub aggregate: AggregateStats,
     pub cdf_path: String,
@@ -42,9 +43,11 @@ impl Report {
             report.stat_report.push(stat_report);
         }
 
-        let report_file = format!("{}/report.txt", &dir);
-        let mut report_file = File::create(report_file).unwrap();
-        write!(&mut report_file, "{:#?}", report).unwrap();
+        // Write report.json
+        let json_file = format!("{}/report.json", &dir);
+        let mut json_file = File::create(json_file).unwrap();
+        let json = serde_json::to_string_pretty(&report).unwrap();
+        write!(&mut json_file, "{}", json).unwrap();
 
         report
     }

@@ -4,6 +4,7 @@ use plotly::{
     Scatter,
     layout::{GridPattern, Layout, LayoutGrid},
 };
+use serde::Serialize;
 use statrs::statistics::{Data, Distribution, OrderStatistics};
 use std::{any::type_name, fmt::Debug};
 
@@ -119,7 +120,7 @@ impl Stats {
 }
 
 #[allow(dead_code)]
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Serialize)]
 pub struct AggregateStats {
     name: String,
     median: f64,
