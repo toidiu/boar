@@ -532,23 +532,30 @@ fn ReportTable(
                         .collect();
 
                     view! {
-                        <div class="overflow-x-auto bg-white rounded-lg shadow-lg border border-gray-300">
-                            <table class="min-w-full border-collapse">
-                                <thead>
-                                    <tr class="bg-gray-100 border-b-2 border-gray-300">
-                                        <th rowspan=2 class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider border-r-2 border-gray-400 bg-gray-100 min-w-56 sticky left-0 z-20 shadow-[4px_0_8px_-2px_rgba(0,0,0,0.15)]">
-                                            "Setup"
-                                        </th>
-                                        {stat_group_headers}
-                                    </tr>
-                                    <tr class="border-b border-gray-300">
-                                        {field_headers}
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {rows}
-                                </tbody>
-                            </table>
+                        <div class="relative">
+                            <div class="overflow-x-auto bg-white rounded-lg shadow-lg border border-gray-300">
+                                <table class="min-w-full border-collapse">
+                                    <thead>
+                                        <tr class="bg-gray-100 border-b-2 border-gray-300">
+                                            <th rowspan=2 class="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider bg-gray-100 min-w-56 sticky left-0 z-20">
+                                                "Setup"
+                                            </th>
+                                            {stat_group_headers}
+                                        </tr>
+                                        <tr class="border-b border-gray-300">
+                                            {field_headers}
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {rows}
+                                    </tbody>
+                                </table>
+                            </div>
+                            // Gradient shadow overlay on the right edge of frozen column
+                            <div
+                                class="absolute top-0 bottom-0 w-4 pointer-events-none z-30"
+                                style="left: 14rem; background: linear-gradient(to right, rgba(0,0,0,0.08), transparent);"
+                            ></div>
                         </div>
                     }.into_any()
                 }
@@ -713,38 +720,35 @@ fn ReportRow(
 
         if is_dragging {
             // The row being dragged
-            "border-b border-gray-200 cursor-grabbing opacity-40 bg-gray-300 scale-[0.98] transition-all duration-150"
+            "border-b border-gray-200 opacity-40 bg-gray-300 scale-[0.98] transition-all duration-150"
         } else if is_drop_target {
             // Show where the row will be inserted
             if let Some(from_idx) = dragging_from {
                 if from_idx > index {
                     // Dragging from below - show indicator at top
-                    "border-t-4 border-t-blue-500 border-b border-gray-200 bg-blue-50 cursor-grab transition-all duration-150"
+                    "border-t-4 border-t-blue-500 border-b border-gray-200 bg-blue-50 transition-all duration-150"
                 } else {
                     // Dragging from above - show indicator at bottom
-                    "border-b-4 border-b-blue-500 bg-blue-50 cursor-grab transition-all duration-150"
+                    "border-b-4 border-b-blue-500 bg-blue-50 transition-all duration-150"
                 }
             } else {
-                "border-b border-gray-200 hover:bg-gray-50 cursor-grab"
+                "border-b border-gray-200 hover:bg-gray-50"
             }
         } else {
-            "border-b border-gray-200 hover:bg-gray-50 cursor-grab transition-all duration-150"
+            "border-b border-gray-200 hover:bg-gray-50 transition-all duration-150"
         }
     };
 
     view! {
         <tr
             class=row_class
-            draggable="true"
-            on:dragstart=on_drag_start
-            on:dragend=on_drag_end
             on:dragover=on_drag_over
             on:dragleave=on_drag_leave
             on:drop=on_drop
         >
-            <td class="px-3 py-2 text-sm text-gray-800 bg-white border-r-2 border-gray-400 min-w-56 sticky left-0 z-10 shadow-[4px_0_8px_-2px_rgba(0,0,0,0.15)]">
-                <div class="flex items-start gap-2">
-                    <div class="flex flex-col items-center gap-1">
+            <td class="px-3 py-2 text-sm text-gray-800 bg-white min-w-56 sticky left-0 z-10">
+                <div class="flex items-stretch gap-2">
+                    <div class="flex flex-col items-center">
                         <button
                             on:click=on_remove
                             class="w-5 h-5 flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 rounded text-sm"
@@ -752,7 +756,16 @@ fn ReportRow(
                         >
                             "×"
                         </button>
-                        <span class="text-gray-400 hover:text-gray-600 cursor-grab select-none" style="font-size: 24px; line-height: 1;" title="Drag to reorder">"⠿"</span>
+                        <div class="flex-1 flex items-center">
+                            <span
+                                class="text-gray-400 hover:text-gray-600 cursor-grab select-none"
+                                style="font-size: 24px; line-height: 1;"
+                                title="Drag to reorder"
+                                draggable="true"
+                                on:dragstart=on_drag_start
+                                on:dragend=on_drag_end
+                            >"⠿"</span>
+                        </div>
                     </div>
                     <div class="flex flex-col gap-1">
                         <UuidCell uuid=uuid />
