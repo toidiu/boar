@@ -1,4 +1,4 @@
-use crate::{EndpointSetup, ExecutionPlan, NetworkSetup};
+use boar::{EndpointSetup, ExecutionPlan, NetworkSetup};
 use byte_unit::Byte;
 use clap::Parser;
 use uuid::Uuid;

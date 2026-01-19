@@ -1,34 +1,8 @@
-use crate::{
-    endpoint::EndpointSetup,
-    error::Result,
-    network::NetworkSetup,
-    stats::{
-        Stats, delivery_rate::DeliveryRate, download_duration::DownloadDuration,
-        startup_exit::StartupExit,
-    },
-};
-use byte_unit::Byte;
-use serde::{Deserialize, Serialize};
-use std::fmt::Debug;
-use uuid::Uuid;
+use boar::{self, DeliveryRate, DownloadDuration, Report, StartupExit, Stats};
 
 mod args;
-mod endpoint;
-mod error;
-mod network;
-mod report;
-mod stats;
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
-pub(crate) struct ExecutionPlan {
-    uuid: Uuid,
-    network_setup: NetworkSetup,
-    endpoint_setup: EndpointSetup,
-    download_bytes: Byte,
-    count: u16,
-}
-
-fn main() -> Result<()> {
+fn main() -> boar::Result<()> {
     // Cli
     let plan = args::parse();
     // dbg!(&setup, &plan);
@@ -77,7 +51,7 @@ fn main() -> Result<()> {
     server.kill().unwrap();
 
     // Report
-    let report = report::Report::new(&plan, vec![download_duration, deliver_rate, startup_exit]);
+    let report = Report::new(&plan, vec![download_duration, deliver_rate, startup_exit]);
 
     println!("{:#?}", report);
 

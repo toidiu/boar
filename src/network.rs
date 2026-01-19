@@ -6,7 +6,7 @@ use std::{
 };
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
-pub(crate) struct NetworkSetup {
+pub struct NetworkSetup {
     cmd: String,
     pub delay_ms: u64,
     pub rate_mbit: u64,
