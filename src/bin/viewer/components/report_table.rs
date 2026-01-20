@@ -328,7 +328,8 @@ fn ReportRow(
                     let baseline_key = (name_clone.clone(), field.clone());
                     baseline_stats_clone.get(&baseline_key).and_then(|&baseline| {
                         current_value.and_then(|current| {
-                            utils::get_comparison_color(current, baseline, &name_clone)
+                            let goal = stat.map(|s| s.aggregate.optimization_goal).unwrap_or(boar::OptimizationGoal::None);
+                            utils::get_comparison_color(current, baseline, goal)
                         })
                     })
                 };
@@ -552,36 +553,30 @@ mod utils {
         format!("rgb({}, {}, {})", r, g, b)
     }
 
-    /// Returns true if lower values are better for this stat
-    fn is_lower_better(stat_name: &str) -> bool {
-        matches!(stat_name, "DownloadDuration")
-    }
-
     /// Calculate comparison color based on current vs baseline value
     /// Returns CSS background color string with appropriate tint and intensity
-    pub fn get_comparison_color(current: f64, baseline: f64, stat_name: &str) -> Option<String> {
-        if baseline == 0.0 || current == baseline {
-            return None; // No comparison possible or same value
+    pub fn get_comparison_color(
+        current: f64,
+        baseline: f64,
+        goal: boar::OptimizationGoal,
+    ) -> Option<String> {
+        if baseline == 0.0 || current == baseline || goal == boar::OptimizationGoal::None {
+            return None;
         }
 
-        let lower_is_better = is_lower_better(stat_name);
         let pct_diff = ((current - baseline) / baseline.abs()) * 100.0;
 
-        // Determine if this is better or worse
-        let is_better = if lower_is_better {
-            current < baseline
-        } else {
-            current > baseline
+        let is_better = match goal {
+            boar::OptimizationGoal::Lower => current < baseline,
+            boar::OptimizationGoal::Higher => current > baseline,
+            boar::OptimizationGoal::None => return None,
         };
 
-        // Calculate intensity based on percentage difference (cap at 50% for full intensity)
-        let intensity = (pct_diff.abs() / 50.0).min(1.0) * 0.4; // Max opacity 0.4
+        let intensity = (pct_diff.abs() / 50.0).min(1.0) * 0.4;
 
         if is_better {
-            // Green tint for better values
             Some(format!("rgba(34, 197, 94, {:.2})", intensity))
         } else {
-            // Red tint for worse values
             Some(format!("rgba(239, 68, 68, {:.2})", intensity))
         }
     }
