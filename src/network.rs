@@ -11,31 +11,32 @@ pub struct NetworkSetup {
     pub delay_ms: u64,
     pub rate_mbit: u64,
     pub loss_model: String,
-    pub bdp_bytes: u64, // Bandwidth-Delay Product in bytes
-}
-
-/// Calculate Bandwidth-Delay Product (BDP) in bytes.
-///
-/// BDP = RTT × Bandwidth (converted to bytes)
-///
-/// Formula derivation:
-/// - RTT = 2 × delay_ms (round-trip = 2 × one-way delay)
-/// - Bandwidth = rate_mbit × 1,000,000 bits/sec
-/// - BDP (bits) = (delay_ms / 1000 × 2) × (rate_mbit × 1,000,000)
-/// - BDP (bytes) = BDP (bits) / 8
-///              = delay_ms × rate_mbit × 250
-fn bdp(delay_ms: u64, rate_mbit: u64) -> u64 {
-    delay_ms * rate_mbit * 250
+    /// Bandwidth-Delay Product in bytes
+    pub bdp_bytes: u64,
 }
 
 impl NetworkSetup {
+    /// Calculate Bandwidth-Delay Product (BDP) in bytes.
+    ///
+    /// BDP = RTT × Bandwidth (converted to bytes)
+    ///
+    /// Formula derivation:
+    /// - RTT = 2 × delay_ms (round-trip = 2 × one-way delay)
+    /// - Bandwidth = rate_mbit × 1,000,000 bits/sec
+    /// - BDP (bits) = (delay_ms / 1000 × 2) × (rate_mbit × 1,000,000)
+    /// - BDP (bytes) = BDP (bits) / 8
+    ///              = delay_ms × rate_mbit × 250
+    fn bdp(delay_ms: u64, rate_mbit: u64) -> u64 {
+        delay_ms * rate_mbit * 250
+    }
+
     pub fn new(cmd: String, delay_ms: u64, rate_mbit: u64, loss_model: String) -> Self {
         NetworkSetup {
             cmd,
             delay_ms,
             rate_mbit,
             loss_model,
-            bdp_bytes: bdp(delay_ms, rate_mbit),
+            bdp_bytes: Self::bdp(delay_ms, rate_mbit),
         }
     }
 
@@ -92,6 +93,6 @@ mod tests {
     fn bdp_calculation() {
         // delay=50ms (one-way), RTT=100ms, rate=5mbit
         // BDP = 0.1s × 5,000,000 bits/s = 500,000 bits = 62,500 bytes
-        assert_eq!(bdp(50, 5), 62_500);
+        assert_eq!(NetworkSetup::bdp(50, 5), 62_500);
     }
 }
