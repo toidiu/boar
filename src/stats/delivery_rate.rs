@@ -1,4 +1,4 @@
-use crate::stats::ToStatMetric;
+use crate::stats::{OptimizationGoal, ToStatMetric};
 use regex::Regex;
 use std::fmt::Debug;
 
@@ -28,6 +28,10 @@ impl DeliveryRate {
 impl ToStatMetric for DeliveryRate {
     fn as_f64(&self) -> f64 {
         self.rate as f64
+    }
+
+    fn optimization_goal() -> OptimizationGoal {
+        OptimizationGoal::Higher
     }
 }
 
