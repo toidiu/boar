@@ -11,7 +11,7 @@ pub const ALL_FIELDS: &[&str] = &[
 ];
 
 // Default visible fields
-pub const DEFAULT_FIELDS: &[&str] = &["trimean", "p99"];
+pub const DEFAULT_FIELDS: &[&str] = &["p50", "p99", "median", "trimean"];
 
 // localStorage key for column preferences
 pub const STORAGE_KEY: &str = "boar_viewer_visible_fields";
