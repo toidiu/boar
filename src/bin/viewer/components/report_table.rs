@@ -313,6 +313,7 @@ fn ReportRow(
                 let mut cells = vec![cdf_cell];
 
                 // Then stat field cells
+                let plan_clone = plan.clone();
                 let field_cells: Vec<_> = visible_fields.iter().map(move |field| {
                 let value = stat
                     .map(|s| utils::get_stat_field(s, field))
@@ -320,28 +321,54 @@ fn ReportRow(
 
                 // Get current raw value for comparison
                 let current_value = stat.and_then(|s| utils::get_stat_raw_value(s, field));
+                let goal = stat.map(|s| &s.aggregate.optimization_goal);
 
-                // Get baseline value and compute comparison color
-                let comparison_style = if is_baseline {
-                    None // First row is the baseline, no comparison
-                } else {
-                    let baseline_key = (name_clone.clone(), field.clone());
-                    baseline_stats_clone.get(&baseline_key).and_then(|&baseline| {
-                        current_value.and_then(|current| {
-                            let goal = stat.map(|s| s.aggregate.optimization_goal).unwrap_or(boar::OptimizationGoal::None);
-                            utils::get_comparison_color(current, baseline, goal)
+                // Check if this is a RelativeTo comparison
+                let (style, suffix) = if let Some(boar::OptimizationGoal::RelativeTo(field_path)) = goal {
+                    // RelativeTo comparison
+                    let reference = utils::resolve_field_path(&plan_clone, field_path);
+                    let comparison = current_value.zip(reference).and_then(|(curr, ref_val)| {
+                        utils::get_relative_comparison(curr, ref_val)
+                    });
+
+                    let style = comparison
+                        .as_ref()
+                        .and_then(|c| c.background_color.as_ref())
+                        .map(|c| format!("background-color: {};", c))
+                        .unwrap_or_default();
+
+                    let suffix = comparison
+                        .map(|c| {
+                            let arrow = c.arrow.unwrap_or("");
+                            format!(" {} {}", arrow, c.percentage)
                         })
-                    })
-                };
+                        .unwrap_or_default();
 
-                let style = comparison_style
-                    .map(|c| format!("background-color: {};", c))
-                    .unwrap_or_default();
+                    (style, suffix)
+                } else if is_baseline {
+                    (String::new(), String::new())
+                } else {
+                    // Original Higher/Lower comparison
+                    let baseline_key = (name_clone.clone(), field.clone());
+                    let style = baseline_stats_clone
+                        .get(&baseline_key)
+                        .and_then(|&baseline| {
+                            current_value.and_then(|current| {
+                                let goal = stat
+                                    .map(|s| &s.aggregate.optimization_goal)
+                                    .unwrap_or(&boar::OptimizationGoal::None);
+                                utils::get_comparison_color(current, baseline, goal)
+                            })
+                        })
+                        .map(|c| format!("background-color: {};", c))
+                        .unwrap_or_default();
+                    (style, String::new())
+                };
 
                 let field_bg = if is_baseline { "bg-blue-50" } else { "bg-white" };
                 view! {
                     <td class={format!("px-3 py-3 whitespace-nowrap text-sm text-gray-800 text-right font-mono border-r border-gray-200 {}", field_bg)} style=style>
-                        {value}
+                        {format!("{}{}", value, suffix)}
                     </td>
                 }.into_any()
             }).collect();
@@ -558,9 +585,9 @@ mod utils {
     pub fn get_comparison_color(
         current: f64,
         baseline: f64,
-        goal: boar::OptimizationGoal,
+        goal: &boar::OptimizationGoal,
     ) -> Option<String> {
-        if baseline == 0.0 || current == baseline || goal == boar::OptimizationGoal::None {
+        if baseline == 0.0 || current == baseline || *goal == boar::OptimizationGoal::None {
             return None;
         }
 
@@ -570,6 +597,7 @@ mod utils {
             boar::OptimizationGoal::Lower => current < baseline,
             boar::OptimizationGoal::Higher => current > baseline,
             boar::OptimizationGoal::None => return None,
+            boar::OptimizationGoal::RelativeTo(_) => return None, // Handled separately
         };
 
         let intensity = (pct_diff.abs() / 50.0).min(1.0) * 0.4;
@@ -579,6 +607,58 @@ mod utils {
         } else {
             Some(format!("rgba(239, 68, 68, {:.2})", intensity))
         }
+    }
+
+    /// Resolve a field path like "network_setup.bdp_bytes" to its value
+    pub fn resolve_field_path(plan: &boar::ExecutionPlan, path: &str) -> Option<f64> {
+        match path {
+            "network_setup.bdp_bytes" => Some(plan.network_setup.bdp_bytes as f64),
+            _ => None,
+        }
+    }
+
+    /// Result of comparing a value against a reference (for RelativeTo goals)
+    pub struct RelativeComparison {
+        pub background_color: Option<String>,
+        pub arrow: Option<&'static str>, // "↑" or "↓" or None
+        pub percentage: String,          // e.g., "(120%)"
+    }
+
+    /// Compute comparison for RelativeTo goal
+    /// Returns background color, arrow indicator, and percentage string
+    pub fn get_relative_comparison(current: f64, reference: f64) -> Option<RelativeComparison> {
+        if reference == 0.0 {
+            return None;
+        }
+
+        let ratio = current / reference;
+        let percentage = format!("({:.0}%)", ratio * 100.0);
+
+        // Threshold: ±5% (0.95 to 1.05)
+        let (background_color, arrow) = if ratio > 1.05 {
+            // Above reference by >5%: green with up arrow
+            let intensity = ((ratio - 1.05) / 0.5).min(1.0) * 0.4;
+            (
+                Some(format!("rgba(34, 197, 94, {:.2})", intensity)),
+                Some("↑"),
+            )
+        } else if ratio < 0.95 {
+            // Below reference by >5%: red with down arrow
+            let intensity = ((0.95 - ratio) / 0.5).min(1.0) * 0.4;
+            (
+                Some(format!("rgba(239, 68, 68, {:.2})", intensity)),
+                Some("↓"),
+            )
+        } else {
+            // Within ±5%: neutral, no arrow
+            (None, None)
+        };
+
+        Some(RelativeComparison {
+            background_color,
+            arrow,
+            percentage,
+        })
     }
 
     /// Get the value of a specific field from AggregateStats
