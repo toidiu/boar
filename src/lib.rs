@@ -11,6 +11,6 @@ pub use network::NetworkSetup;
 pub use plan::ExecutionPlan;
 pub use report::{Report, StatsReport};
 pub use stats::{
-    AggregateStats, Stats, delivery_rate::DeliveryRate, download_duration::DownloadDuration,
-    startup_exit::StartupExit,
+    AggregateStats, OptimizationGoal, Stats, delivery_rate::DeliveryRate,
+    download_duration::DownloadDuration, startup_exit::StartupExit,
 };
