@@ -1,4 +1,4 @@
-use crate::stats::{ToStatMetric, error::StatsError};
+use crate::stats::{OptimizationGoal, ToStatMetric, error::StatsError};
 use regex::Regex;
 use std::{fmt::Debug, time::Duration};
 
@@ -53,6 +53,10 @@ impl DownloadDuration {
 impl ToStatMetric for DownloadDuration {
     fn as_f64(&self) -> f64 {
         self.duration.as_secs_f64()
+    }
+
+    fn optimization_goal() -> OptimizationGoal {
+        OptimizationGoal::Lower
     }
 }
 
