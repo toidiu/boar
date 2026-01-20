@@ -112,7 +112,7 @@ pub fn ReportTable(
                                     colspan=colspan
                                     class="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider border-l-2 border-gray-300 bg-gray-100"
                                 >
-                                    {name.clone()}
+                                    {utils::pascal_to_display(name)}
                                 </th>
                             }
                         })
@@ -124,7 +124,7 @@ pub fn ReportTable(
                         .flat_map(|_| {
                             // CDF header first (with left border for stat group)
                             let mut headers = vec![view! {
-                                <th class="px-3 py-2 text-center text-xs font-medium text-gray-600 border-l-2 border-gray-300 border-b border-gray-200 bg-gray-50">
+                                <th class="px-3 py-2 text-center text-xs font-medium text-gray-600 border-l-2 border-r border-gray-300 border-b border-gray-200 bg-gray-50">
                                     {"CDF".to_string()}
                                 </th>
                             }];
@@ -147,7 +147,7 @@ pub fn ReportTable(
                                 <table class="min-w-full border-collapse">
                                     <thead>
                                         <tr class="bg-gray-100 border-b-2 border-gray-300">
-                                            <th rowspan=2 class="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider bg-gray-100 min-w-56 sticky left-0 z-20">
+                                            <th rowspan=2 class="relative px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider bg-gray-100 min-w-56 sticky left-0 z-20 after:absolute after:top-0 after:right-0 after:bottom-0 after:w-4 after:-mr-4 after:pointer-events-none after:bg-gradient-to-r after:from-black/[0.08] after:to-transparent">
                                                 "Setup"
                                             </th>
                                             {stat_group_headers}
@@ -161,11 +161,6 @@ pub fn ReportTable(
                                     </tbody>
                                 </table>
                             </div>
-                            // Gradient shadow overlay on the right edge of frozen column
-                            <div
-                                class="absolute top-0 bottom-0 w-4 pointer-events-none z-30"
-                                style="left: 14rem; background: linear-gradient(to right, rgba(0,0,0,0.08), transparent);"
-                            ></div>
                         </div>
                     }.into_any()
                 }
@@ -304,7 +299,7 @@ fn ReportRow(
 
                 // CDF preview cell first (with left border for stat group)
                 let cdf_cell = view! {
-                    <td class="px-2 py-1 whitespace-nowrap text-center border-l-2 border-gray-300 bg-white">
+                    <td class="px-2 py-1 whitespace-nowrap text-center border-l-2 border-r border-gray-300 bg-white">
                         <CdfPreview
                             cdf_content=cdf_content.clone()
                             stat_name=cdf_key.clone()
@@ -387,7 +382,7 @@ fn ReportRow(
             on:dragleave=on_drag_leave
             on:drop=on_drop
         >
-            <td class="px-3 py-2 text-sm text-gray-800 bg-white min-w-56 sticky left-0 z-10">
+            <td class="relative px-3 py-2 text-sm text-gray-800 bg-white min-w-56 sticky left-0 z-10 after:absolute after:top-0 after:right-0 after:bottom-0 after:w-4 after:-mr-4 after:pointer-events-none after:bg-gradient-to-r after:from-black/[0.08] after:to-transparent">
                 <div class="flex items-stretch gap-2">
                     <div class="flex flex-col items-center">
                         <button
@@ -410,13 +405,13 @@ fn ReportRow(
                     </div>
                     <div class="flex flex-col gap-1">
                         <UuidCell uuid=uuid />
-                        <div><span class="text-gray-500">"Size: "</span><span class="font-medium">{format_size(plan.download_bytes.as_u64(), DECIMAL)}</span></div>
-                        <div class="whitespace-nowrap"><span class="text-gray-500">"CCA: "</span><span class="font-medium">{plan.endpoint_setup.server_cca.clone()}</span></div>
+                        <div><span class="text-gray-500">"Delay: "</span><span class="font-medium">{format!("{}ms", plan.network_setup.delay_ms)}</span></div>
+                        <div><span class="text-gray-500">"Rate: "</span><span class="font-medium">{format!("{}mbit", plan.network_setup.rate_mbit)}</span></div>
+                        <div><span class="text-gray-500">"Loss: "</span><span class="font-medium">{plan.network_setup.loss_model.clone()}</span></div>
                         <div class="mt-1 px-2 py-1.5 bg-gray-100 rounded border border-gray-200">
                             <div class="flex flex-col gap-0.5 text-xs">
-                                <div><span class="text-gray-500">"Delay: "</span><span class="font-medium">{format!("{}ms", plan.network_setup.delay_ms)}</span></div>
-                                <div><span class="text-gray-500">"Rate: "</span><span class="font-medium">{format!("{}mbit", plan.network_setup.rate_mbit)}</span></div>
-                                <div><span class="text-gray-500">"Loss: "</span><span>{plan.network_setup.loss_model.clone()}</span></div>
+                                <div><span class="text-gray-500">"Size: "</span><span class="font-medium">{format_size(plan.download_bytes.as_u64(), DECIMAL)}</span></div>
+                                <div class="whitespace-nowrap"><span class="text-gray-500">"CCA: "</span><span class="font-medium">{plan.endpoint_setup.server_cca.clone()}</span></div>
                             </div>
                         </div>
                     </div>
@@ -527,6 +522,18 @@ mod utils {
         } else {
             formatted
         }
+    }
+
+    /// Convert PascalCase to display string with spaces (e.g., "DownloadDuration" -> "Download Duration")
+    pub fn pascal_to_display(s: &str) -> String {
+        let mut result = String::new();
+        for (i, c) in s.chars().enumerate() {
+            if c.is_uppercase() && i > 0 {
+                result.push(' ');
+            }
+            result.push(c);
+        }
+        result
     }
 
     /// Generate a pastel background color from a UUID

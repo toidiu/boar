@@ -16,14 +16,14 @@ pub fn CdfPreview(
 
             view! {
                 <div
-                    class="w-20 h-14 cursor-pointer hover:ring-2 hover:ring-blue-400 rounded overflow-hidden bg-gray-50"
+                    class="w-40 h-28 cursor-pointer hover:ring-2 hover:ring-blue-400 rounded overflow-hidden bg-gray-50"
                     title="Click to expand CDF"
                     on:click=on_click
                 >
                     <iframe
                         srcdoc=html
                         class="w-full h-full pointer-events-none border-0"
-                        style="transform: scale(0.15); transform-origin: top left; width: 666%; height: 666%;"
+                        style="transform: scale(0.25); transform-origin: top left; width: 400%; height: 400%;"
                         sandbox="allow-scripts"
                     />
                 </div>
@@ -32,7 +32,7 @@ pub fn CdfPreview(
         }
         None => {
             view! {
-                <div class="w-20 h-14 flex items-center justify-center text-gray-300 text-xs bg-gray-50 rounded">
+                <div class="w-40 h-28 flex items-center justify-center text-gray-300 text-xs bg-gray-50 rounded">
                     "No CDF"
                 </div>
             }
