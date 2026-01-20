@@ -69,7 +69,7 @@ impl Stats {
     pub fn aggregate(&mut self) -> AggregateStats {
         AggregateStats::new(
             self.name.clone(),
-            self.optimization_goal,
+            self.optimization_goal.clone(),
             &mut self.stat_data,
         )
     }
