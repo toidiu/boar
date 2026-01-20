@@ -13,13 +13,14 @@ pub mod download_duration;
 pub mod error;
 pub mod startup_exit;
 
-#[derive(Debug, Clone, Copy, Default, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum OptimizationGoal {
     #[default]
     None,
     Higher,
     Lower,
+    RelativeTo(String),
 }
 
 // A metric over which we can calculate statistics.
