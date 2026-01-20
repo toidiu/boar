@@ -13,26 +13,40 @@ pub mod download_duration;
 pub mod error;
 pub mod startup_exit;
 
+#[derive(Debug, Clone, Copy, Default, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum OptimizationGoal {
+    #[default]
+    None,
+    Higher,
+    Lower,
+}
+
 // A metric over which we can calculate statistics.
 pub trait ToStatMetric: Debug {
     fn as_f64(&self) -> f64;
+    fn optimization_goal() -> OptimizationGoal
+    where
+        Self: Sized;
 }
 
 #[derive(Debug)]
 pub struct Stats {
     name: String,
+    optimization_goal: OptimizationGoal,
     #[allow(dead_code)]
     raw_metrics: Vec<Box<dyn ToStatMetric>>,
     stat_data: Data<Vec<f64>>,
 }
 
 impl Stats {
-    pub fn new<T>(raw_metrics: Vec<Box<dyn ToStatMetric>>) -> Self {
+    pub fn new<T: ToStatMetric>(raw_metrics: Vec<Box<dyn ToStatMetric>>) -> Self {
         let name = type_name::<T>()
             .split("::")
             .last()
             .expect("Expect type")
             .to_string();
+        let optimization_goal = T::optimization_goal();
 
         let data = {
             let data_f64: Vec<_> = raw_metrics.iter().map(|metric| metric.as_f64()).collect();
@@ -41,6 +55,7 @@ impl Stats {
 
         Stats {
             name,
+            optimization_goal,
             raw_metrics,
             stat_data: data,
         }
@@ -51,7 +66,11 @@ impl Stats {
     }
 
     pub fn aggregate(&mut self) -> AggregateStats {
-        AggregateStats::new(self.name.clone(), &mut self.stat_data)
+        AggregateStats::new(
+            self.name.clone(),
+            self.optimization_goal,
+            &mut self.stat_data,
+        )
     }
 
     pub(crate) fn plot_cdf(&self, plan: &ExecutionPlan, dir: &str) -> String {
@@ -123,6 +142,7 @@ impl Stats {
 #[derive(Debug, Clone, Default, Deserialize, Serialize)]
 pub struct AggregateStats {
     pub name: String,
+    pub optimization_goal: OptimizationGoal,
     pub median: f64,
     pub mean: Option<f64>,
     pub std_dev: Option<f64>,
@@ -137,7 +157,7 @@ pub struct AggregateStats {
 }
 
 impl AggregateStats {
-    fn new(name: String, data: &mut Data<Vec<f64>>) -> Self {
+    fn new(name: String, optimization_goal: OptimizationGoal, data: &mut Data<Vec<f64>>) -> Self {
         let p25 = data.percentile(25);
         let p50 = data.percentile(50);
         let p75 = data.percentile(75);
@@ -145,6 +165,7 @@ impl AggregateStats {
 
         AggregateStats {
             name,
+            optimization_goal,
             median: data.median(),
             mean: data.mean(),
             std_dev: data.std_dev(),
