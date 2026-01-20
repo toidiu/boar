@@ -101,12 +101,14 @@ pub fn App() -> impl IntoView {
                 >
                     "Clear All"
                 </button>
-                <SettingsDropdown
-                    visible_fields=visible_fields
-                    set_visible_fields=set_visible_fields
-                    show_settings=show_settings
-                    set_show_settings=set_show_settings
-                />
+                <div class="ml-auto">
+                    <SettingsDropdown
+                        visible_fields=visible_fields
+                        set_visible_fields=set_visible_fields
+                        show_settings=show_settings
+                        set_show_settings=set_show_settings
+                    />
+                </div>
             </div>
             <ReportTable
                 reports=reports
