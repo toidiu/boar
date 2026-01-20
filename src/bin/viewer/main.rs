@@ -67,6 +67,12 @@ fn App() -> impl IntoView {
     // Store loaded reports with CDF content
     let (reports, set_reports) = signal(Vec::<ReportWithCdf>::new());
 
+    // Trigger to reset file input (incremented on clear all)
+    let (clear_trigger, set_clear_trigger) = signal(0u32);
+
+    // Trigger to reset file input only (incremented when × is clicked, keeps count)
+    let (input_reset, set_input_reset) = signal(0u32);
+
     // Visible fields for stats columns - load from localStorage
     let (visible_fields, set_visible_fields) = signal(load_visible_fields());
 
@@ -112,13 +118,14 @@ fn App() -> impl IntoView {
 
     let on_clear_all = move |_| {
         set_reports.set(Vec::new());
+        set_clear_trigger.update(|n| *n += 1); // Trigger file input reset
     };
 
     view! {
         <div class="min-h-screen bg-gray-100 p-8">
             <h1 class="text-3xl font-bold text-gray-800 mb-8">"Boar Report Viewer"</h1>
             <div class="mb-8 flex items-center gap-4">
-                <FilePicker set_reports=set_reports />
+                <FilePicker set_reports=set_reports reports=reports clear_trigger=clear_trigger input_reset=input_reset />
                 <button
                     on:click=on_clear_all
                     disabled=move || !has_reports()
@@ -149,6 +156,7 @@ fn App() -> impl IntoView {
                 set_drop_target_index=set_drop_target_index
                 _expanded_cdf=expanded_cdf
                 set_expanded_cdf=set_expanded_cdf
+                set_input_reset=set_input_reset
             />
 
             // CDF Modal (expanded view)
@@ -284,12 +292,17 @@ fn SettingsDropdown(
 }
 
 #[component]
-fn FilePicker(set_reports: WriteSignal<Vec<ReportWithCdf>>) -> impl IntoView {
+fn FilePicker(
+    set_reports: WriteSignal<Vec<ReportWithCdf>>,
+    reports: ReadSignal<Vec<ReportWithCdf>>,
+    clear_trigger: ReadSignal<u32>,
+    input_reset: ReadSignal<u32>,
+) -> impl IntoView {
     use leptos::html::Input;
 
     let input_ref: NodeRef<Input> = NodeRef::new();
 
-    // Track the number of reports found
+    // Track the number of reports found (None = never loaded, Some(n) = loaded n reports)
     let (report_count, set_report_count) = signal(Option::<usize>::None);
 
     // Set webkitdirectory attribute after mount
@@ -298,6 +311,42 @@ fn FilePicker(set_reports: WriteSignal<Vec<ReportWithCdf>>) -> impl IntoView {
             let el: &web_sys::Element = input.as_ref();
             let _ = el.set_attribute("webkitdirectory", "true");
         }
+    });
+
+    // Update report count when reports change (e.g., when × is clicked)
+    Effect::new(move |prev_count: Option<usize>| {
+        let count = reports.read().len();
+        // Only update if we've loaded reports at least once (prev_count is Some)
+        // and the count has actually changed
+        if prev_count.is_some() && prev_count != Some(count) {
+            set_report_count.set(Some(count));
+        }
+        count
+    });
+
+    // Reset file input and report count when clear_trigger changes (Clear All)
+    Effect::new(move |prev: Option<u32>| {
+        let current = clear_trigger.get();
+        if prev.is_some() && prev != Some(current) {
+            // Clear was triggered - reset the file input and count
+            if let Some(input) = input_ref.get() {
+                input.set_value("");
+            }
+            set_report_count.set(None);
+        }
+        current
+    });
+
+    // Reset file input only when input_reset changes (× button clicked)
+    Effect::new(move |prev: Option<u32>| {
+        let current = input_reset.get();
+        if prev.is_some() && prev != Some(current) {
+            // Reset file input only (keep count as-is, it's updated by the reports Effect)
+            if let Some(input) = input_ref.get() {
+                input.set_value("");
+            }
+        }
+        current
     });
 
     let on_change = move |ev: web_sys::Event| {
@@ -414,6 +463,7 @@ fn ReportTable(
     set_drop_target_index: WriteSignal<Option<usize>>,
     _expanded_cdf: ReadSignal<Option<(uuid::Uuid, String)>>,
     set_expanded_cdf: WriteSignal<Option<(uuid::Uuid, String)>>,
+    set_input_reset: WriteSignal<u32>,
 ) -> impl IntoView {
     view! {
         <div>
@@ -494,6 +544,7 @@ fn ReportTable(
                                     drop_target_index=drop_target_index
                                     set_drop_target_index=set_drop_target_index
                                     set_expanded_cdf=set_expanded_cdf
+                                    set_input_reset=set_input_reset
                                 />
                             }
                         })
@@ -587,6 +638,7 @@ fn ReportRow(
     drop_target_index: ReadSignal<Option<usize>>,
     set_drop_target_index: WriteSignal<Option<usize>>,
     set_expanded_cdf: WriteSignal<Option<(uuid::Uuid, String)>>,
+    set_input_reset: WriteSignal<u32>,
 ) -> impl IntoView {
     let is_baseline = index == 0;
     let report = report_with_cdf.report.clone();
@@ -599,6 +651,8 @@ fn ReportRow(
         set_reports.update(|reports| {
             reports.retain(|r| r.report.plan.uuid != uuid);
         });
+        // Reset file input so the removed report can be reloaded
+        set_input_reset.update(|n| *n += 1);
     };
 
     // Drag event handlers
