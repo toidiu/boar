@@ -13,13 +13,20 @@ pub mod download_duration;
 pub mod error;
 pub mod startup_exit;
 
+/// Defines how a stat should be compared for "better" or "worse" values.
+///
+/// Used by the viewer to colorize stat values when comparing reports.
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum OptimizationGoal {
+    /// No comparison coloring
     #[default]
     None,
+    /// Higher values are better (e.g., delivery rate)
     Higher,
+    /// Lower values are better (e.g., download duration)
     Lower,
+    /// Compare against a reference field (e.g., "network_setup.bdp_bytes")
     RelativeTo(String),
 }
 
