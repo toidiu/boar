@@ -298,8 +298,9 @@ fn ReportRow(
                 let cdf_content = cdf_html_map_clone.get(&cdf_key).cloned();
 
                 // CDF preview cell first (with left border for stat group)
+                let cdf_bg = if is_baseline { "bg-blue-50" } else { "bg-white" };
                 let cdf_cell = view! {
-                    <td class="px-2 py-1 whitespace-nowrap text-center border-l-2 border-r border-gray-300 bg-white">
+                    <td class={format!("px-2 py-1 whitespace-nowrap text-center border-l-2 border-r border-gray-300 {}", cdf_bg)}>
                         <CdfPreview
                             cdf_content=cdf_content.clone()
                             stat_name=cdf_key.clone()
@@ -336,8 +337,9 @@ fn ReportRow(
                     .map(|c| format!("background-color: {};", c))
                     .unwrap_or_default();
 
+                let field_bg = if is_baseline { "bg-blue-50" } else { "bg-white" };
                 view! {
-                    <td class="px-3 py-3 whitespace-nowrap text-sm text-gray-800 text-right font-mono border-r border-gray-200 bg-white" style=style>
+                    <td class={format!("px-3 py-3 whitespace-nowrap text-sm text-gray-800 text-right font-mono border-r border-gray-200 {}", field_bg)} style=style>
                         {value}
                     </td>
                 }.into_any()
@@ -370,6 +372,9 @@ fn ReportRow(
             } else {
                 "border-b border-gray-200 hover:bg-gray-50"
             }
+        } else if is_baseline {
+            // Baseline row - solid blue tint
+            "border-b border-gray-200 bg-blue-50 transition-all duration-150"
         } else {
             "border-b border-gray-200 hover:bg-gray-50 transition-all duration-150"
         }
@@ -382,7 +387,7 @@ fn ReportRow(
             on:dragleave=on_drag_leave
             on:drop=on_drop
         >
-            <td class="relative px-3 py-2 text-sm text-gray-800 bg-white min-w-56 sticky left-0 z-10 after:absolute after:top-0 after:right-0 after:bottom-0 after:w-4 after:-mr-4 after:pointer-events-none after:bg-gradient-to-r after:from-black/[0.08] after:to-transparent">
+            <td class={format!("relative px-3 py-2 text-sm text-gray-800 {} min-w-56 sticky left-0 z-10 after:absolute after:top-0 after:right-0 after:bottom-0 after:w-4 after:-mr-4 after:pointer-events-none after:bg-gradient-to-r after:from-black/[0.08] after:to-transparent", if is_baseline { "bg-blue-50" } else { "bg-white" })}>
                 <div class="flex items-stretch gap-2">
                     <div class="flex flex-col items-center">
                         <button
