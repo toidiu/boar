@@ -46,7 +46,7 @@ impl ToStatMetric for StartupExit {
     }
 
     fn optimization_goal() -> OptimizationGoal {
-        OptimizationGoal::None
+        OptimizationGoal::RelativeTo("network_setup.bdp_bytes".to_string())
     }
 }
 
