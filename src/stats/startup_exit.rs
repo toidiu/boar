@@ -1,4 +1,4 @@
-use crate::stats::ToStatMetric;
+use crate::stats::{OptimizationGoal, ToStatMetric};
 use regex::Regex;
 use std::fmt::Debug;
 
@@ -43,6 +43,10 @@ impl StartupExit {
 impl ToStatMetric for StartupExit {
     fn as_f64(&self) -> f64 {
         self.bandwidth as f64
+    }
+
+    fn optimization_goal() -> OptimizationGoal {
+        OptimizationGoal::None
     }
 }
 
