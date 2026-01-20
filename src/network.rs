@@ -16,20 +16,6 @@ pub struct NetworkSetup {
 }
 
 impl NetworkSetup {
-    /// Calculate Bandwidth-Delay Product (BDP) in bytes.
-    ///
-    /// BDP = RTT × Bandwidth (converted to bytes)
-    ///
-    /// Formula derivation:
-    /// - RTT = 2 × delay_ms (round-trip = 2 × one-way delay)
-    /// - Bandwidth = rate_mbit × 1,000,000 bits/sec
-    /// - BDP (bits) = (delay_ms / 1000 × 2) × (rate_mbit × 1,000,000)
-    /// - BDP (bytes) = BDP (bits) / 8
-    ///              = delay_ms × rate_mbit × 250
-    fn bdp(delay_ms: u64, rate_mbit: u64) -> u64 {
-        delay_ms * rate_mbit * 250
-    }
-
     pub fn new(cmd: String, delay_ms: u64, rate_mbit: u64, loss_model: String) -> Self {
         NetworkSetup {
             cmd,
@@ -82,6 +68,24 @@ impl NetworkSetup {
         } else {
             Err(BoarError::Script("NetworkSetup create".to_string()))
         }
+    }
+
+    // TODO: I think this under-estimates the value. We are not accounting for any buffers in the
+    // setup. Also we do expect BBR to operate over BDP so we need a way to communicate what the
+    // acceptable value is.
+    //
+    /// Calculate Bandwidth-Delay Product (BDP) in bytes.
+    ///
+    /// BDP = RTT × Bandwidth (converted to bytes)
+    ///
+    /// Formula derivation:
+    /// - RTT = 2 × delay_ms (round-trip = 2 × one-way delay)
+    /// - Bandwidth = rate_mbit × 1,000,000 bits/sec
+    /// - BDP (bits) = (delay_ms / 1000 × 2) × (rate_mbit × 1,000,000)
+    /// - BDP (bytes) = BDP (bits) / 8
+    ///              = delay_ms × rate_mbit × 250
+    fn bdp(delay_ms: u64, rate_mbit: u64) -> u64 {
+        delay_ms * rate_mbit * 250
     }
 }
 
