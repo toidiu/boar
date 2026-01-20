@@ -31,18 +31,17 @@ fn load_visible_fields() -> Vec<String> {
     let window = web_sys::window().expect("no window");
     let storage = window.local_storage().ok().flatten();
 
-    if let Some(storage) = storage {
-        if let Ok(Some(json)) = storage.get_item(STORAGE_KEY) {
-            if let Ok(fields) = serde_json::from_str::<Vec<String>>(&json) {
-                // Validate fields are still valid (filter out any that no longer exist)
-                let valid: Vec<String> = fields
-                    .into_iter()
-                    .filter(|f| ALL_FIELDS.contains(&f.as_str()))
-                    .collect();
-                if !valid.is_empty() {
-                    return valid;
-                }
-            }
+    if let Some(storage) = storage
+        && let Ok(Some(json)) = storage.get_item(STORAGE_KEY)
+        && let Ok(fields) = serde_json::from_str::<Vec<String>>(&json)
+    {
+        // Validate fields are still valid (filter out any that no longer exist)
+        let valid: Vec<String> = fields
+            .into_iter()
+            .filter(|f| ALL_FIELDS.contains(&f.as_str()))
+            .collect();
+        if !valid.is_empty() {
+            return valid;
         }
     }
 
@@ -55,10 +54,10 @@ fn save_visible_fields(fields: &[String]) {
     let window = web_sys::window().expect("no window");
     let storage = window.local_storage().ok().flatten();
 
-    if let Some(storage) = storage {
-        if let Ok(json) = serde_json::to_string(fields) {
-            let _ = storage.set_item(STORAGE_KEY, &json);
-        }
+    if let Some(storage) = storage
+        && let Ok(json) = serde_json::to_string(fields)
+    {
+        let _ = storage.set_item(STORAGE_KEY, &json);
     }
 }
 
@@ -378,10 +377,10 @@ fn FilePicker(
                     for file in files {
                         let name = file.name();
                         if name == "report.json" {
-                            if let Ok(text) = read_file_as_text(&file).await {
-                                if let Ok(r) = serde_json::from_str::<boar::Report>(&text) {
-                                    report = Some(r);
-                                }
+                            if let Ok(text) = read_file_as_text(&file).await
+                                && let Ok(r) = serde_json::from_str::<boar::Report>(&text)
+                            {
+                                report = Some(r);
                             }
                         } else if name.starts_with("cdf_") && name.ends_with(".html") {
                             // Extract stat name from filename: cdf_download_duration.html -> DownloadDuration
@@ -553,8 +552,7 @@ fn ReportTable(
                     // First header row: config columns + stat names with colspan (+1 for CDF)
                     let stat_group_headers: Vec<_> = stat_names_clone
                         .iter()
-                        .enumerate()
-                        .map(|(_, name)| {
+                        .map(|name| {
                             let colspan = fields_clone.len() + 1; // +1 for CDF column
                             view! {
                                 <th
@@ -570,8 +568,7 @@ fn ReportTable(
                     // Second header row: CDF column first, then field names for each stat
                     let field_headers: Vec<_> = stat_names_clone
                         .iter()
-                        .enumerate()
-                        .flat_map(|(_, _)| {
+                        .flat_map(|_| {
                             // CDF header first (with left border for stat group)
                             let mut headers = vec![view! {
                                 <th class="px-3 py-2 text-center text-xs font-medium text-gray-600 border-l-2 border-gray-300 border-b border-gray-200 bg-gray-50">
@@ -579,7 +576,7 @@ fn ReportTable(
                                 </th>
                             }];
                             // Then stat field headers
-                            let field_headers: Vec<_> = fields_clone.iter().enumerate().map(move |(_, field)| {
+                            let field_headers: Vec<_> = fields_clone.iter().map(move |field| {
                                 view! {
                                     <th class="px-3 py-2 text-center text-xs font-medium text-gray-600 border-r border-gray-200 border-b border-gray-200 bg-gray-50">
                                         {field.clone()}
@@ -706,10 +703,10 @@ fn ReportRow(
             dt.set_drop_effect("move");
         }
         // Only set drop target if we're dragging a different row
-        if let Some(from_idx) = dragging_index.get() {
-            if from_idx != index {
-                set_drop_target_index.set(Some(index));
-            }
+        if let Some(from_idx) = dragging_index.get()
+            && from_idx != index
+        {
+            set_drop_target_index.set(Some(index));
         }
     };
 
@@ -722,15 +719,15 @@ fn ReportRow(
 
     let on_drop = move |ev: web_sys::DragEvent| {
         ev.prevent_default();
-        if let Some(from_index) = dragging_index.get() {
-            if from_index != index {
-                set_reports.update(|reports| {
-                    if from_index < reports.len() && index < reports.len() {
-                        let item = reports.remove(from_index);
-                        reports.insert(index, item);
-                    }
-                });
-            }
+        if let Some(from_index) = dragging_index.get()
+            && from_index != index
+        {
+            set_reports.update(|reports| {
+                if from_index < reports.len() && index < reports.len() {
+                    let item = reports.remove(from_index);
+                    reports.insert(index, item);
+                }
+            });
         }
         set_dragging_index.set(None);
         set_drop_target_index.set(None);
@@ -741,8 +738,7 @@ fn ReportRow(
     let stat_cells: Vec<_> =
         stat_names
             .iter()
-            .enumerate()
-            .flat_map(|(_, name)| {
+            .flat_map(|name| {
                 let stat = stats.iter().find(|s| &s.aggregate.name == name);
                 let name_clone = name.clone();
                 let baseline_stats_clone = baseline_stats.clone();
@@ -768,7 +764,7 @@ fn ReportRow(
                 let mut cells = vec![cdf_cell];
 
                 // Then stat field cells
-                let field_cells: Vec<_> = visible_fields.iter().enumerate().map(move |(_, field)| {
+                let field_cells: Vec<_> = visible_fields.iter().map(move |field| {
                 let value = stat
                     .map(|s| get_stat_field(s, field))
                     .unwrap_or_else(|| "-".to_string());
@@ -972,13 +968,13 @@ fn get_stat_field(stat: &boar::StatsReport, field: &str) -> String {
         "mean" => stat
             .aggregate
             .mean
-            .map(|v| format_with_commas(v))
+            .map(format_with_commas)
             .unwrap_or_else(|| "-".to_string()),
         "median" => format_with_commas(stat.aggregate.median),
         "std_dev" => stat
             .aggregate
             .std_dev
-            .map(|v| format_with_commas(v))
+            .map(format_with_commas)
             .unwrap_or_else(|| "-".to_string()),
         "p0" => format_with_commas(stat.aggregate.p0),
         "p25" => format_with_commas(stat.aggregate.p25),

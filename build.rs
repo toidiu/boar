@@ -4,7 +4,7 @@ const DEPS_QUICHE: &str = "deps/quiche";
 
 fn main() {
     // Change the current working directory
-    env::set_current_dir(&DEPS_QUICHE).expect("Failed to change directory");
+    env::set_current_dir(DEPS_QUICHE).expect("Failed to change directory");
 
     // cargo build --bin quiche-client
     let s = Command::new("cargo")

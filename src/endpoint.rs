@@ -89,8 +89,8 @@ impl EndpointSetup {
         // dbg!("client cmd ---: {:?}", &cmd);
 
         let res = cmd.output().unwrap();
-        let logs = String::from_utf8(res.stderr).unwrap();
+        
 
-        logs
+        String::from_utf8(res.stderr).unwrap()
     }
 }

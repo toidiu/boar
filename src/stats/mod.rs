@@ -58,7 +58,7 @@ impl Stats {
         let cdf_data = self.cdf();
 
         let mut plot = plotly::Plot::new();
-        let (x, y): (Vec<_>, Vec<_>) = cdf_data.into_iter().map(|(a, b)| (a, b)).unzip();
+        let (x, y): (Vec<_>, Vec<_>) = cdf_data.into_iter().unzip();
 
         // Graph
         let trace = Scatter::new(x, y)
@@ -102,7 +102,7 @@ impl Stats {
 
         x_ord.sort_by(|a, b| a.partial_cmp(b).unwrap());
 
-        if let Some(mut previous) = x_ord.get(0).map(|&f| f) {
+        if let Some(mut previous) = x_ord.first().copied() {
             let mut cdf = Vec::new();
             for (i, f) in x_ord.into_iter().enumerate() {
                 if f != previous {

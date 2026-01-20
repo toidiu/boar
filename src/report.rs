@@ -37,7 +37,7 @@ impl Report {
             let mut data_file = File::create(data_file).unwrap();
             write!(&mut data_file, "{:#?}", stat).unwrap();
 
-            let cdf_path = stat.plot_cdf(&plan, &dir);
+            let cdf_path = stat.plot_cdf(plan, &dir);
             let aggregate = stat.aggregate();
             let stat_report = StatsReport {
                 aggregate,
