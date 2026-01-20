@@ -11,15 +11,18 @@ pub struct NetworkSetup {
     pub delay_ms: u64,
     pub rate_mbit: u64,
     pub loss_model: String,
+    pub bdp_bytes: u64, // Bandwidth-Delay Product in bytes
 }
 
 impl NetworkSetup {
     pub fn new(cmd: String, delay_ms: u64, rate_mbit: u64, loss_model: String) -> Self {
+        let bdp_bytes = delay_ms * rate_mbit * 250;
         NetworkSetup {
             cmd,
             delay_ms,
-            loss_model,
             rate_mbit,
+            loss_model,
+            bdp_bytes,
         }
     }
 
