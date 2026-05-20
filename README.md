@@ -1,12 +1,8 @@
 A testing utility for measuring networking protocols.
 
-## Getting started
-
-### Platform Support
-**Linux (Debian)**
+## Platform Support
+**Linux**
 Network simulation is created with tc (i.e. netem and htb).
-
-Prerequisite:
 
 ```
 sudo apt update
@@ -18,17 +14,53 @@ Due to lack of tc support on macOS, there is not network simulation and the
 results are less interesting. However, development is still possible.
 
 
-### Run
+## Getting started
+
+### Simulator
 
 ```
 git clone git@github.com:toidiu/boar.git
+```
+
+**Build**
+
+```
 git submodule update --init
 cargo test
-
 cargo build
+```
 
+**Run**
+```
+// Run simulation
 // tc/netem requires sudo permission
 sudo ./target/debug/boar
+```
+
+### Viewer
+
+Lives in `src/bin/viewer`
+
+**Prerequisite**
+
+```
+rustup target add wasm32-unknown-unknown
+cargo install trunk
+
+sudo apt install npm
+```
+
+**Build**
+
+```
+cd Viewer
+npm install
+trunk build
+```
+
+**Run**
+```
+trunk serve
 ```
 
 ### Debug
