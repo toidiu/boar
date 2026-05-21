@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-svg.js"></script>
+        <script src="https://cdn.plot.ly/plotly-3.0.1.min.js"></script>
+        
+</head>
+
+<body>
+    <div>
+        <div id="plotly-html-element" class="plotly-graph-div" style="height:100%; width:100%;"></div>
+
+        <script type="module">
+            const graph_div = document.getElementById("plotly-html-element");
+            await Plotly.newPlot(graph_div, {"data":[{"type":"scatter","showlegend":false,"x":[8.758,8.76,8.761,8.763,8.764,8.765,8.766,8.767,8.768,8.769,8.77,8.771,8.772,8.773,8.774000000000001,8.775,8.776,8.777,8.778,8.779,8.78,8.781,8.782,8.783,8.784,8.785,8.789,8.791,8.792],"y":[0.01,0.04,0.05,0.06,0.07,0.08,0.13,0.18,0.2,0.26,0.34,0.39,0.44,0.52,0.59,0.65,0.69,0.73,0.77,0.81,0.84,0.86,0.87,0.9,0.92,0.94,0.95,0.99,1.0],"xaxis":"x","yaxis":"y"}],"layout":{"title":{"text":"download_duration [bbr2_gcongestion] [delay: 10ms] [rate: 50mbit] [loss: random 0%] [dl_bytes: 50000000]"},"showlegend":true,"height":1000,"grid":{"rows":1,"columns":1,"pattern":"independent"}},"config":{},"frames":null});
+        </script>
+    </div>
+</body>
+
+</html>

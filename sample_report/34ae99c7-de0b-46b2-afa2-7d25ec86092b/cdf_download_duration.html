@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-svg.js"></script>
+        <script src="https://cdn.plot.ly/plotly-3.0.1.min.js"></script>
+        
+</head>
+
+<body>
+    <div>
+        <div id="plotly-html-element" class="plotly-graph-div" style="height:100%; width:100%;"></div>
+
+        <script type="module">
+            const graph_div = document.getElementById("plotly-html-element");
+            await Plotly.newPlot(graph_div, {"data":[{"type":"scatter","showlegend":false,"x":[15.31,15.312,15.313,15.314,15.315,15.316,15.318,15.321,15.323,15.326,15.327,15.333,15.335,15.342,15.363,15.364,15.366,15.367,15.368,15.369,15.37,15.371,15.372,15.373,15.374,15.375,15.376,15.377,15.378,15.379,15.38,15.381,15.382,15.383,15.384,15.386,15.387,15.389,15.39,15.392,15.402,15.406,15.711,15.712,15.714,15.716,15.719,15.721,15.723,15.725,15.727,15.737,15.782],"y":[0.01,0.02,0.03,0.05,0.06,0.07,0.08,0.09,0.11,0.12,0.13,0.14,0.15,0.16,0.18,0.19,0.21,0.25,0.27,0.3,0.31,0.33,0.38,0.4,0.43,0.46,0.49,0.51,0.58,0.62,0.63,0.68,0.7,0.72,0.75,0.78,0.8,0.81,0.82,0.83,0.84,0.85,0.86,0.87,0.88,0.89,0.91,0.92,0.96,0.97,0.98,0.99,1.0],"xaxis":"x","yaxis":"y"}],"layout":{"title":{"text":"download_duration [bbr2_gcongestion] [delay: 200ms] [rate: 50mbit] [loss: random 0%] [dl_bytes: 50000000]"},"showlegend":true,"height":1000,"grid":{"rows":1,"columns":1,"pattern":"independent"}},"config":{},"frames":null});
+        </script>
+    </div>
+</body>
+
+</html>

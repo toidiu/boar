@@ -1,0 +1,410 @@
+Stats {
+    name: "DownloadDuration",
+    optimization_goal: Lower,
+    raw_metrics: [
+        DownloadDuration {
+            duration: 15.782s,
+        },
+        DownloadDuration {
+            duration: 15.378s,
+        },
+        DownloadDuration {
+            duration: 15.379s,
+        },
+        DownloadDuration {
+            duration: 15.372s,
+        },
+        DownloadDuration {
+            duration: 15.376s,
+        },
+        DownloadDuration {
+            duration: 15.387s,
+        },
+        DownloadDuration {
+            duration: 15.379s,
+        },
+        DownloadDuration {
+            duration: 15.315s,
+        },
+        DownloadDuration {
+            duration: 15.364s,
+        },
+        DownloadDuration {
+            duration: 15.714s,
+        },
+        DownloadDuration {
+            duration: 15.386s,
+        },
+        DownloadDuration {
+            duration: 15.373s,
+        },
+        DownloadDuration {
+            duration: 15.374s,
+        },
+        DownloadDuration {
+            duration: 15.31s,
+        },
+        DownloadDuration {
+            duration: 15.374s,
+        },
+        DownloadDuration {
+            duration: 15.321s,
+        },
+        DownloadDuration {
+            duration: 15.366s,
+        },
+        DownloadDuration {
+            duration: 15.375s,
+        },
+        DownloadDuration {
+            duration: 15.318s,
+        },
+        DownloadDuration {
+            duration: 15.39s,
+        },
+        DownloadDuration {
+            duration: 15.711s,
+        },
+        DownloadDuration {
+            duration: 15.382s,
+        },
+        DownloadDuration {
+            duration: 15.387s,
+        },
+        DownloadDuration {
+            duration: 15.327s,
+        },
+        DownloadDuration {
+            duration: 15.38s,
+        },
+        DownloadDuration {
+            duration: 15.381s,
+        },
+        DownloadDuration {
+            duration: 15.372s,
+        },
+        DownloadDuration {
+            duration: 15.369s,
+        },
+        DownloadDuration {
+            duration: 15.369s,
+        },
+        DownloadDuration {
+            duration: 15.371s,
+        },
+        DownloadDuration {
+            duration: 15.723s,
+        },
+        DownloadDuration {
+            duration: 15.378s,
+        },
+        DownloadDuration {
+            duration: 15.712s,
+        },
+        DownloadDuration {
+            duration: 15.376s,
+        },
+        DownloadDuration {
+            duration: 15.323s,
+        },
+        DownloadDuration {
+            duration: 15.363s,
+        },
+        DownloadDuration {
+            duration: 15.377s,
+        },
+        DownloadDuration {
+            duration: 15.314s,
+        },
+        DownloadDuration {
+            duration: 15.323s,
+        },
+        DownloadDuration {
+            duration: 15.363s,
+        },
+        DownloadDuration {
+            duration: 15.368s,
+        },
+        DownloadDuration {
+            duration: 15.367s,
+        },
+        DownloadDuration {
+            duration: 15.366s,
+        },
+        DownloadDuration {
+            duration: 15.374s,
+        },
+        DownloadDuration {
+            duration: 15.367s,
+        },
+        DownloadDuration {
+            duration: 15.379s,
+        },
+        DownloadDuration {
+            duration: 15.313s,
+        },
+        DownloadDuration {
+            duration: 15.373s,
+        },
+        DownloadDuration {
+            duration: 15.369s,
+        },
+        DownloadDuration {
+            duration: 15.375s,
+        },
+        DownloadDuration {
+            duration: 15.372s,
+        },
+        DownloadDuration {
+            duration: 15.312s,
+        },
+        DownloadDuration {
+            duration: 15.372s,
+        },
+        DownloadDuration {
+            duration: 15.367s,
+        },
+        DownloadDuration {
+            duration: 15.326s,
+        },
+        DownloadDuration {
+            duration: 15.377s,
+        },
+        DownloadDuration {
+            duration: 15.376s,
+        },
+        DownloadDuration {
+            duration: 15.383s,
+        },
+        DownloadDuration {
+            duration: 15.368s,
+        },
+        DownloadDuration {
+            duration: 15.37s,
+        },
+        DownloadDuration {
+            duration: 15.314s,
+        },
+        DownloadDuration {
+            duration: 15.382s,
+        },
+        DownloadDuration {
+            duration: 15.719s,
+        },
+        DownloadDuration {
+            duration: 15.381s,
+        },
+        DownloadDuration {
+            duration: 15.378s,
+        },
+        DownloadDuration {
+            duration: 15.723s,
+        },
+        DownloadDuration {
+            duration: 15.392s,
+        },
+        DownloadDuration {
+            duration: 15.381s,
+        },
+        DownloadDuration {
+            duration: 15.737s,
+        },
+        DownloadDuration {
+            duration: 15.333s,
+        },
+        DownloadDuration {
+            duration: 15.378s,
+        },
+        DownloadDuration {
+            duration: 15.379s,
+        },
+        DownloadDuration {
+            duration: 15.386s,
+        },
+        DownloadDuration {
+            duration: 15.372s,
+        },
+        DownloadDuration {
+            duration: 15.381s,
+        },
+        DownloadDuration {
+            duration: 15.389s,
+        },
+        DownloadDuration {
+            duration: 15.723s,
+        },
+        DownloadDuration {
+            duration: 15.375s,
+        },
+        DownloadDuration {
+            duration: 15.725s,
+        },
+        DownloadDuration {
+            duration: 15.721s,
+        },
+        DownloadDuration {
+            duration: 15.719s,
+        },
+        DownloadDuration {
+            duration: 15.378s,
+        },
+        DownloadDuration {
+            duration: 15.378s,
+        },
+        DownloadDuration {
+            duration: 15.316s,
+        },
+        DownloadDuration {
+            duration: 15.723s,
+        },
+        DownloadDuration {
+            duration: 15.406s,
+        },
+        DownloadDuration {
+            duration: 15.384s,
+        },
+        DownloadDuration {
+            duration: 15.716s,
+        },
+        DownloadDuration {
+            duration: 15.384s,
+        },
+        DownloadDuration {
+            duration: 15.371s,
+        },
+        DownloadDuration {
+            duration: 15.384s,
+        },
+        DownloadDuration {
+            duration: 15.335s,
+        },
+        DownloadDuration {
+            duration: 15.381s,
+        },
+        DownloadDuration {
+            duration: 15.402s,
+        },
+        DownloadDuration {
+            duration: 15.383s,
+        },
+        DownloadDuration {
+            duration: 15.378s,
+        },
+        DownloadDuration {
+            duration: 15.342s,
+        },
+        DownloadDuration {
+            duration: 15.386s,
+        },
+        DownloadDuration {
+            duration: 15.727s,
+        },
+        DownloadDuration {
+            duration: 15.367s,
+        },
+    ],
+    stat_data: Data(
+        [
+            15.782,
+            15.378,
+            15.379,
+            15.372,
+            15.376,
+            15.387,
+            15.379,
+            15.315,
+            15.364,
+            15.714,
+            15.386,
+            15.373,
+            15.374,
+            15.31,
+            15.374,
+            15.321,
+            15.366,
+            15.375,
+            15.318,
+            15.39,
+            15.711,
+            15.382,
+            15.387,
+            15.327,
+            15.38,
+            15.381,
+            15.372,
+            15.369,
+            15.369,
+            15.371,
+            15.723,
+            15.378,
+            15.712,
+            15.376,
+            15.323,
+            15.363,
+            15.377,
+            15.314,
+            15.323,
+            15.363,
+            15.368,
+            15.367,
+            15.366,
+            15.374,
+            15.367,
+            15.379,
+            15.313,
+            15.373,
+            15.369,
+            15.375,
+            15.372,
+            15.312,
+            15.372,
+            15.367,
+            15.326,
+            15.377,
+            15.376,
+            15.383,
+            15.368,
+            15.37,
+            15.314,
+            15.382,
+            15.719,
+            15.381,
+            15.378,
+            15.723,
+            15.392,
+            15.381,
+            15.737,
+            15.333,
+            15.378,
+            15.379,
+            15.386,
+            15.372,
+            15.381,
+            15.389,
+            15.723,
+            15.375,
+            15.725,
+            15.721,
+            15.719,
+            15.378,
+            15.378,
+            15.316,
+            15.723,
+            15.406,
+            15.384,
+            15.716,
+            15.384,
+            15.371,
+            15.384,
+            15.335,
+            15.381,
+            15.402,
+            15.383,
+            15.378,
+            15.342,
+            15.386,
+            15.727,
+            15.367,
+        ],
+    ),
+}
