@@ -1,0 +1,410 @@
+Stats {
+    name: "DeliveryRate",
+    optimization_goal: Higher,
+    raw_metrics: [
+        DeliveryRate {
+            rate: 61339,
+        },
+        DeliveryRate {
+            rate: 59821,
+        },
+        DeliveryRate {
+            rate: 60574,
+        },
+        DeliveryRate {
+            rate: 59623,
+        },
+        DeliveryRate {
+            rate: 61394,
+        },
+        DeliveryRate {
+            rate: 61256,
+        },
+        DeliveryRate {
+            rate: 58040,
+        },
+        DeliveryRate {
+            rate: 61214,
+        },
+        DeliveryRate {
+            rate: 58876,
+        },
+        DeliveryRate {
+            rate: 53926,
+        },
+        DeliveryRate {
+            rate: 59149,
+        },
+        DeliveryRate {
+            rate: 60683,
+        },
+        DeliveryRate {
+            rate: 59086,
+        },
+        DeliveryRate {
+            rate: 58450,
+        },
+        DeliveryRate {
+            rate: 58555,
+        },
+        DeliveryRate {
+            rate: 61010,
+        },
+        DeliveryRate {
+            rate: 60482,
+        },
+        DeliveryRate {
+            rate: 59727,
+        },
+        DeliveryRate {
+            rate: 58956,
+        },
+        DeliveryRate {
+            rate: 60738,
+        },
+        DeliveryRate {
+            rate: 60430,
+        },
+        DeliveryRate {
+            rate: 58673,
+        },
+        DeliveryRate {
+            rate: 56382,
+        },
+        DeliveryRate {
+            rate: 61413,
+        },
+        DeliveryRate {
+            rate: 59277,
+        },
+        DeliveryRate {
+            rate: 54922,
+        },
+        DeliveryRate {
+            rate: 58455,
+        },
+        DeliveryRate {
+            rate: 59994,
+        },
+        DeliveryRate {
+            rate: 59243,
+        },
+        DeliveryRate {
+            rate: 61177,
+        },
+        DeliveryRate {
+            rate: 61469,
+        },
+        DeliveryRate {
+            rate: 55854,
+        },
+        DeliveryRate {
+            rate: 58779,
+        },
+        DeliveryRate {
+            rate: 59302,
+        },
+        DeliveryRate {
+            rate: 59345,
+        },
+        DeliveryRate {
+            rate: 61354,
+        },
+        DeliveryRate {
+            rate: 57939,
+        },
+        DeliveryRate {
+            rate: 56681,
+        },
+        DeliveryRate {
+            rate: 58460,
+        },
+        DeliveryRate {
+            rate: 56383,
+        },
+        DeliveryRate {
+            rate: 59756,
+        },
+        DeliveryRate {
+            rate: 56738,
+        },
+        DeliveryRate {
+            rate: 59940,
+        },
+        DeliveryRate {
+            rate: 56173,
+        },
+        DeliveryRate {
+            rate: 61030,
+        },
+        DeliveryRate {
+            rate: 61029,
+        },
+        DeliveryRate {
+            rate: 59892,
+        },
+        DeliveryRate {
+            rate: 59808,
+        },
+        DeliveryRate {
+            rate: 61305,
+        },
+        DeliveryRate {
+            rate: 60068,
+        },
+        DeliveryRate {
+            rate: 58948,
+        },
+        DeliveryRate {
+            rate: 59322,
+        },
+        DeliveryRate {
+            rate: 60665,
+        },
+        DeliveryRate {
+            rate: 60762,
+        },
+        DeliveryRate {
+            rate: 58417,
+        },
+        DeliveryRate {
+            rate: 58511,
+        },
+        DeliveryRate {
+            rate: 50205,
+        },
+        DeliveryRate {
+            rate: 58940,
+        },
+        DeliveryRate {
+            rate: 57285,
+        },
+        DeliveryRate {
+            rate: 60955,
+        },
+        DeliveryRate {
+            rate: 61254,
+        },
+        DeliveryRate {
+            rate: 58262,
+        },
+        DeliveryRate {
+            rate: 60988,
+        },
+        DeliveryRate {
+            rate: 54777,
+        },
+        DeliveryRate {
+            rate: 59259,
+        },
+        DeliveryRate {
+            rate: 60852,
+        },
+        DeliveryRate {
+            rate: 56540,
+        },
+        DeliveryRate {
+            rate: 57674,
+        },
+        DeliveryRate {
+            rate: 58464,
+        },
+        DeliveryRate {
+            rate: 61277,
+        },
+        DeliveryRate {
+            rate: 60713,
+        },
+        DeliveryRate {
+            rate: 59392,
+        },
+        DeliveryRate {
+            rate: 59912,
+        },
+        DeliveryRate {
+            rate: 61304,
+        },
+        DeliveryRate {
+            rate: 52460,
+        },
+        DeliveryRate {
+            rate: 61505,
+        },
+        DeliveryRate {
+            rate: 60835,
+        },
+        DeliveryRate {
+            rate: 57337,
+        },
+        DeliveryRate {
+            rate: 60029,
+        },
+        DeliveryRate {
+            rate: 59594,
+        },
+        DeliveryRate {
+            rate: 59957,
+        },
+        DeliveryRate {
+            rate: 60418,
+        },
+        DeliveryRate {
+            rate: 52544,
+        },
+        DeliveryRate {
+            rate: 59074,
+        },
+        DeliveryRate {
+            rate: 61137,
+        },
+        DeliveryRate {
+            rate: 56742,
+        },
+        DeliveryRate {
+            rate: 47606,
+        },
+        DeliveryRate {
+            rate: 56124,
+        },
+        DeliveryRate {
+            rate: 60851,
+        },
+        DeliveryRate {
+            rate: 61254,
+        },
+        DeliveryRate {
+            rate: 61753,
+        },
+        DeliveryRate {
+            rate: 60419,
+        },
+        DeliveryRate {
+            rate: 61199,
+        },
+        DeliveryRate {
+            rate: 60357,
+        },
+        DeliveryRate {
+            rate: 61283,
+        },
+        DeliveryRate {
+            rate: 54254,
+        },
+        DeliveryRate {
+            rate: 60823,
+        },
+        DeliveryRate {
+            rate: 59715,
+        },
+        DeliveryRate {
+            rate: 60868,
+        },
+        DeliveryRate {
+            rate: 60142,
+        },
+    ],
+    stat_data: Data(
+        [
+            61339.0,
+            59821.0,
+            60574.0,
+            59623.0,
+            61394.0,
+            61256.0,
+            58040.0,
+            61214.0,
+            58876.0,
+            53926.0,
+            59149.0,
+            60683.0,
+            59086.0,
+            58450.0,
+            58555.0,
+            61010.0,
+            60482.0,
+            59727.0,
+            58956.0,
+            60738.0,
+            60430.0,
+            58673.0,
+            56382.0,
+            61413.0,
+            59277.0,
+            54922.0,
+            58455.0,
+            59994.0,
+            59243.0,
+            61177.0,
+            61469.0,
+            55854.0,
+            58779.0,
+            59302.0,
+            59345.0,
+            61354.0,
+            57939.0,
+            56681.0,
+            58460.0,
+            56383.0,
+            59756.0,
+            56738.0,
+            59940.0,
+            56173.0,
+            61030.0,
+            61029.0,
+            59892.0,
+            59808.0,
+            61305.0,
+            60068.0,
+            58948.0,
+            59322.0,
+            60665.0,
+            60762.0,
+            58417.0,
+            58511.0,
+            50205.0,
+            58940.0,
+            57285.0,
+            60955.0,
+            61254.0,
+            58262.0,
+            60988.0,
+            54777.0,
+            59259.0,
+            60852.0,
+            56540.0,
+            57674.0,
+            58464.0,
+            61277.0,
+            60713.0,
+            59392.0,
+            59912.0,
+            61304.0,
+            52460.0,
+            61505.0,
+            60835.0,
+            57337.0,
+            60029.0,
+            59594.0,
+            59957.0,
+            60418.0,
+            52544.0,
+            59074.0,
+            61137.0,
+            56742.0,
+            47606.0,
+            56124.0,
+            60851.0,
+            61254.0,
+            61753.0,
+            60419.0,
+            61199.0,
+            60357.0,
+            61283.0,
+            54254.0,
+            60823.0,
+            59715.0,
+            60868.0,
+            60142.0,
+        ],
+    ),
+}

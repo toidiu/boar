@@ -1,0 +1,80 @@
+{
+  "plan": {
+    "uuid": "56a7fab9-8d93-45ae-9de9-ee911435eddf",
+    "network_setup": {
+      "cmd": "./scripts/virt_config_tc.sh",
+      "delay_ms": 100,
+      "rate_mbit": 50,
+      "loss_model": "random 0%",
+      "bdp_bytes": 1250000
+    },
+    "endpoint_setup": {
+      "client_binary": "deps/quiche/target/debug/quiche-client",
+      "client_logging": "RUST_LOG=info",
+      "server_binary": "deps/quiche/target/debug/examples/async_http3_server",
+      "server_ip": "10.55.10.1",
+      "server_port": "9999",
+      "server_cca": "bbr2_gcongestion"
+    },
+    "download_bytes": "50 MB",
+    "count": 100
+  },
+  "stat_report": [
+    {
+      "aggregate": {
+        "name": "DownloadDuration",
+        "optimization_goal": "lower",
+        "median": 11.722,
+        "mean": 11.72351,
+        "std_dev": 0.02279087846955772,
+        "p0": 11.674,
+        "p25": 11.715416666666666,
+        "p50": 11.722,
+        "p75": 11.729,
+        "p90": 11.735266666666668,
+        "p99": 11.85944,
+        "p100": 11.916,
+        "trimean": 11.722104166666666
+      },
+      "cdf_path": "report/56a7fab9-8d93-45ae-9de9-ee911435eddf/cdf_download_duration.html"
+    },
+    {
+      "aggregate": {
+        "name": "DeliveryRate",
+        "optimization_goal": "higher",
+        "median": 7493.0,
+        "mean": 7485.460000000002,
+        "std_dev": 355.5673065608669,
+        "p0": 6810.0,
+        "p25": 7215.5,
+        "p50": 7493.0,
+        "p75": 7732.0,
+        "p90": 7990.833333333333,
+        "p99": 8328.429999999998,
+        "p100": 8386.0,
+        "trimean": 7483.375
+      },
+      "cdf_path": "report/56a7fab9-8d93-45ae-9de9-ee911435eddf/cdf_delivery_rate.html"
+    },
+    {
+      "aggregate": {
+        "name": "StartupExit",
+        "optimization_goal": {
+          "relative_to": "network_setup.bdp_bytes"
+        },
+        "median": 13411217.0,
+        "mean": 13561786.828282828,
+        "std_dev": 3849859.453131615,
+        "p0": 3774071.0,
+        "p25": 10490727.333333334,
+        "p50": 13411217.0,
+        "p75": 15904739.666666666,
+        "p90": 17654392.866666663,
+        "p99": 23115636.99333331,
+        "p100": 23586004.0,
+        "trimean": 13304475.25
+      },
+      "cdf_path": "report/56a7fab9-8d93-45ae-9de9-ee911435eddf/cdf_startup_exit.html"
+    }
+  ]
+}

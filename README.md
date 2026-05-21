@@ -80,4 +80,5 @@ sudo ip netns exec ns_c1 sh -c "RUST_LOG=info ../quiche/target/release/quiche-cl
 - [x] render report output as a html page
 - [ ] allow for running multiple server binaries
   - [ ] compare stats between different builds
+- [ ] if there is no startup exit then there will be no data.. handle parsing
 
