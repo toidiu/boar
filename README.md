@@ -1,5 +1,9 @@
 A testing utility for measuring networking protocols.
 
+Demo:
+- Go to boar.toidiu.com
+- Load the reports in `sample_report` folder (load entire folder)
+
 ## Platform Support
 **Linux**
 Network simulation is created with tc (i.e. netem and htb).
@@ -16,22 +20,18 @@ results are less interesting. However, development is still possible.
 
 ## Getting started
 
-### Simulator
-
 ```
 git clone git@github.com:toidiu/boar.git
-```
-
-**Build**
-
-```
 git submodule update --init
+```
+
+### Simulator
+
+Build and run:
+```
 cargo test
 cargo build
-```
 
-**Run**
-```
 // Run simulation
 // tc/netem requires sudo permission
 sudo ./target/debug/boar
@@ -39,10 +39,11 @@ sudo ./target/debug/boar
 
 ### Viewer
 
-Lives in `src/bin/viewer`
+The standalone web app for viewing the reports.
 
-**Prerequisite**
+Find the hosted version at: boar.toidiu.com
 
+Prerequisites:
 ```
 rustup target add wasm32-unknown-unknown
 cargo install trunk
@@ -50,16 +51,12 @@ cargo install trunk
 sudo apt install npm
 ```
 
-**Build**
-
+Build and run:
 ```
 cd Viewer
 npm install
 trunk build
-```
 
-**Run**
-```
 trunk serve
 ```
 
