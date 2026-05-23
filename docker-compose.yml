@@ -1,0 +1,61 @@
+# Two-container setup that runs boar over a docker bridge instead of the
+# legacy ns_s1..ns_c2 netns chain. The server lives in `boar-server`; boar
+# runs in `boar-client`, shapes its own eth0 with tc + ifb (NET_ADMIN), and
+# reaches the server by docker DNS.
+#
+# Prereqs on the host:
+#   sudo modprobe ifb sch_netem
+#   git submodule update --init
+#
+# Usage — one-shot run:
+#   docker compose up --build --abort-on-container-exit
+#
+# Usage — interactive iteration:
+#   docker compose up -d --build boar-server
+#   docker compose run --rm boar-client boar --mode docker --delay-ms 100 -c 5
+#
+# Reports land in ./report on the host (bind-mounted into boar-client).
+
+services:
+  boar-server:
+    build: .
+    image: boar
+    container_name: boar-server
+    networks: [boar-net]
+    environment:
+      # boar in docker mode does NOT push --cc-algorithm to the server (it
+      # only labels the report). The server's actual CCA is set here.
+      BOAR_SERVER_CCA: ${BOAR_SERVER_CCA:-bbr2_gcongestion}
+    command:
+      - sh
+      - -c
+      - |
+        exec deps/quiche/target/debug/examples/async_http3_server \
+          --address 0.0.0.0:9999 \
+          --cc-algorithm "$$BOAR_SERVER_CCA"
+
+  boar-client:
+    build: .
+    image: boar
+    container_name: boar-client
+    depends_on: [boar-server]
+    networks: [boar-net]
+    # tc + IFB ingress redirect in scripts/docker_tc.sh needs NET_ADMIN. The
+    # ifb / sch_netem modules need to be loaded on the host kernel; modprobe
+    # from inside the container is best-effort.
+    cap_add: [NET_ADMIN]
+    volumes:
+      - ./report:/boar/report
+    environment:
+      # Match bind-mounted report files to the host user. Override in a .env
+      # file or your shell if you're not UID/GID 1000.
+      HOST_UID: ${HOST_UID:-1000}
+      HOST_GID: ${HOST_GID:-1000}
+      # Brief grace period for the server's UDP listener — there's no clean
+      # HTTP/3 healthcheck, so the entrypoint sleeps instead of probing.
+      BOAR_STARTUP_WAIT: "2"
+    command: ["boar", "--mode", "docker"]
+
+networks:
+  boar-net:
+    driver: bridge
