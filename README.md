@@ -13,6 +13,8 @@ sudo apt update
 sudo apt install iproute2 ethtool
 ```
 
+Or run it in containers: see [DOCKER.md](DOCKER.md).
+
 **macOS**
 Due to lack of tc support on macOS, there is not network simulation and the
 results are less interesting. However, development is still possible.

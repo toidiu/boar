@@ -31,4 +31,8 @@ docker-run: ## Run client with extra args, e.g. make docker-run ARGS="-d 50mb -c
 docker-down: ## Stop and remove containers + network
 	docker compose down
 
-.PHONY: help test build run docker-build docker-up docker-server docker-run docker-down
+docker-clean: ## Tear down and wipe ./reports (keeps .gitkeep)
+	docker compose down
+	rm -rf reports/* 2>/dev/null || true
+
+.PHONY: help test build run docker-build docker-up docker-server docker-run docker-down docker-clean

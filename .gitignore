@@ -1,7 +1,8 @@
 # Rust
 /target/
 *plot*.html
-reports
+reports/*
+!reports/.gitkeep
 
 # Viewer
 ## Node modules (for Tailwind in viewer)
