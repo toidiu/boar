@@ -14,7 +14,7 @@
 #   docker compose up -d --build boar-server
 #   docker compose run --rm boar-client boar --mode docker --delay-ms 100 -c 5
 #
-# Reports land in ./report on the host (bind-mounted into boar-client).
+# Reports land in ./reports on the host (bind-mounted into boar-client).
 
 services:
   boar-server:
@@ -45,7 +45,7 @@ services:
     # from inside the container is best-effort.
     cap_add: [NET_ADMIN]
     volumes:
-      - ./report:/boar/report
+      - ./reports:/boar/reports
     environment:
       # Match bind-mounted report files to the host user. Override in a .env
       # file or your shell if you're not UID/GID 1000.
