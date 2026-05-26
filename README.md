@@ -1,8 +1,10 @@
 A testing utility for measuring networking protocols.
 
 Demo:
-- Go to [boar.toidiu.com](boar.toidiu.com)
+- Go to [boar.toidiu.com](https://boar.toidiu.com/)
 - Load the reports in `sample_report` folder (load entire folder)
+
+![boar](./screenshot.png)
 
 ## Platform Support
 **Linux**
@@ -41,7 +43,7 @@ sudo ./target/debug/boar
 
 The standalone web app for viewing the reports.
 
-Find the hosted version at: [boar.toidiu.com](boar.toidiu.com)
+Find the hosted version at: [boar.toidiu.com](https://boar.toidiu.com/)
 
 Prerequisites:
 ```
