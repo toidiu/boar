@@ -8,6 +8,12 @@ use std::{
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct NetworkSetup {
     cmd: String,
+    /// Script run by `cleanup()`. Host mode points this at `scripts/test.sh`
+    /// (a no-op — the real teardown lives inline at the top of
+    /// virt_config_tc.sh); docker mode points it at docker_tc_cleanup.sh,
+    /// which actually drops the qdiscs from eth0/ifb0.
+    #[serde(default = "default_cleanup_cmd")]
+    cleanup_cmd: String,
     pub delay_ms: u64,
     pub rate_mbit: u64,
     pub loss_model: String,
@@ -15,10 +21,21 @@ pub struct NetworkSetup {
     pub bdp_bytes: u64,
 }
 
+fn default_cleanup_cmd() -> String {
+    "./scripts/test.sh".to_string()
+}
+
 impl NetworkSetup {
-    pub fn new(cmd: String, delay_ms: u64, rate_mbit: u64, loss_model: String) -> Self {
+    pub fn new(
+        cmd: String,
+        cleanup_cmd: String,
+        delay_ms: u64,
+        rate_mbit: u64,
+        loss_model: String,
+    ) -> Self {
         NetworkSetup {
             cmd,
+            cleanup_cmd,
             delay_ms,
             rate_mbit,
             loss_model,
@@ -29,7 +46,7 @@ impl NetworkSetup {
     pub fn cleanup(&self) -> Result<()> {
         let res = Command::new("sh")
             .arg("-c")
-            .arg("./scripts/test.sh")
+            .arg(&self.cleanup_cmd)
             .stdout(Stdio::piped())
             .output()
             .unwrap();

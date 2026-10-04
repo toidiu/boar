@@ -1,5 +1,6 @@
 mod endpoint;
 mod error;
+mod mode;
 mod network;
 mod plan;
 mod report;
@@ -7,6 +8,7 @@ mod stats;
 
 pub use endpoint::EndpointSetup;
 pub use error::{BoarError, Result};
+pub use mode::Mode;
 pub use network::NetworkSetup;
 pub use plan::ExecutionPlan;
 pub use report::{Report, StatsReport};

@@ -56,8 +56,7 @@ impl Report {
     }
 
     fn create_report_dir(plan: &ExecutionPlan) -> String {
-        let dir = format!("report/{}", plan.uuid);
-        // make "/report"
+        let dir = format!("reports/{}", plan.uuid);
         // make folder for this report based on uuid
         create_dir_all(&dir).unwrap();
 
